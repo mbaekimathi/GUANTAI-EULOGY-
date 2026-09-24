@@ -544,12 +544,20 @@ def get_visit_destinations():
 
 
 def parse_programme_timeline(text):
+    """Parse schedule lines as ``time : label`` (space-colon-space between fields).
+
+    Clock times like ``7:00 AM`` must use that separator so the hour/minute colon
+    is not treated as the field delimiter.
+    """
     items = []
     for raw in (text or "").splitlines():
         line = raw.strip()
         if not line:
             continue
-        if ":" in line:
+        if " : " in line:
+            time_part, label = line.split(" : ", 1)
+            items.append({"time": time_part.strip(), "label": label.strip()})
+        elif ":" in line:
             time_part, _, label = line.partition(":")
             items.append({"time": time_part.strip(), "label": label.strip()})
         else:

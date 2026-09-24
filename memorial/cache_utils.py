@@ -12,7 +12,7 @@ HOME_CONTENT_PK_KEY = "memorial:home_content_pk_v1"
 LIFE_CHAPTERS_LIST_KEY = "memorial:life_chapters_v1"
 LIFE_STORY_PAGE_KEY = "memorial:life_story_page_v1"
 TRIBUTES_PAGE_KEY = "memorial:tributes_page_v1"
-HOME_PROGRAMME_PREFIX = "memorial:home_programme_v1"
+HOME_PROGRAMME_PREFIX = "memorial:home_programme_v2"
 HEALTH_DB_OK_KEY = "memorial:health_db_ok_v1"
 
 PUBLIC_CACHE_SECONDS = int(os.getenv("PUBLIC_CACHE_SECONDS", "600"))
