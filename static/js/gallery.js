@@ -6,7 +6,6 @@
   var tiles = page.querySelectorAll("[data-gallery-tile]");
   var revealBlocks = page.querySelectorAll("[data-gallery-reveal]");
   var lightbox = page.querySelector("[data-gallery-lightbox]");
-  var dialog = page.querySelector("[data-gallery-dialog]");
   var lightboxImg = page.querySelector("[data-gallery-lightbox-img]");
   var lightboxCaption = page.querySelector("[data-gallery-lightbox-caption]");
   var lightboxCounter = page.querySelector("[data-gallery-lightbox-counter]");
@@ -19,49 +18,73 @@
   var activeIndex = 0;
   var lastFocus = null;
 
+  function markLoaded(img) {
+    if (!img || img.classList.contains("is-loaded")) return;
+    img.classList.add("is-loaded");
+  }
+
   tiles.forEach(function (tile) {
-    var img = tile.querySelector("img");
+    var img = tile.querySelector(".gallery-tile__img");
     var captionEl = tile.querySelector(".gallery-tile__caption");
     if (!img) return;
+
+    if (img.complete && img.naturalWidth > 0) {
+      markLoaded(img);
+    } else {
+      img.addEventListener("load", function () {
+        markLoaded(img);
+      }, { once: true });
+      img.addEventListener("error", function () {
+        markLoaded(img);
+      }, { once: true });
+    }
+
     items.push({
-      src: img.getAttribute("data-full-src") || img.src,
+      gridSrc: img.currentSrc || img.src,
+      fullSrc: img.getAttribute("data-full-src") || img.src,
       alt: img.alt || "Memorial photograph",
       caption: captionEl ? captionEl.textContent.trim() : "",
     });
   });
 
   if (!reduceMotion && "IntersectionObserver" in window) {
-    var observer = new IntersectionObserver(
+    var heroObserver = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
             entry.target.classList.add("is-visible");
-            observer.unobserve(entry.target);
+            heroObserver.unobserve(entry.target);
           }
         });
       },
-      { root: null, rootMargin: "0px 0px -6% 0px", threshold: 0.08 }
+      { root: null, rootMargin: "0px", threshold: 0.01 }
     );
-    tiles.forEach(function (tile) {
-      observer.observe(tile);
-    });
     revealBlocks.forEach(function (block) {
-      observer.observe(block);
+      heroObserver.observe(block);
     });
   } else {
-    tiles.forEach(function (tile) {
-      tile.classList.add("is-visible");
-    });
     revealBlocks.forEach(function (block) {
       block.classList.add("is-visible");
     });
+  }
+
+  function prefetchFull(src) {
+    if (!src) return;
+    var link = document.createElement("link");
+    link.rel = "prefetch";
+    link.as = "image";
+    link.href = src;
+    document.head.appendChild(link);
   }
 
   function showSlide(index) {
     if (!items.length || !lightboxImg) return;
     activeIndex = (index + items.length) % items.length;
     var item = items[activeIndex];
-    lightboxImg.src = item.src;
+    var fullSrc = item.fullSrc;
+    if (lightboxImg.src !== fullSrc) {
+      lightboxImg.src = fullSrc;
+    }
     lightboxImg.alt = item.alt;
     if (lightboxCaption) {
       if (item.caption) {
@@ -77,6 +100,11 @@
     }
     if (prevBtn) prevBtn.hidden = items.length < 2;
     if (nextBtn) nextBtn.hidden = items.length < 2;
+
+    var nextItem = items[(activeIndex + 1) % items.length];
+    var prevItem = items[(activeIndex - 1 + items.length) % items.length];
+    if (nextItem && nextItem.fullSrc !== fullSrc) prefetchFull(nextItem.fullSrc);
+    if (prevItem && prevItem.fullSrc !== fullSrc) prefetchFull(prevItem.fullSrc);
   }
 
   function openLightbox(index, trigger) {
@@ -97,7 +125,6 @@
     lightbox.setAttribute("aria-hidden", "true");
     lightbox.classList.remove("is-open");
     document.body.style.overflow = "";
-    if (lightboxImg) lightboxImg.src = "";
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
 

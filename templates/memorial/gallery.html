@@ -2,7 +2,10 @@
 {% load static %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/gallery.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'css/gallery.css' %}?v=2">
+{% if photos %}
+<link rel="preload" as="image" href="{{ photos.0.grid_image_url }}" fetchpriority="high">
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -11,7 +14,7 @@
     <div class="gallery-hero__glow" aria-hidden="true"></div>
     <p class="gallery-hero__eyebrow">Through the years</p>
     <h2 class="page-hero__title gallery-hero__title">Gallery</h2>
-    <p class="gallery-hero__lead">Photographs and quiet moments from a life well lived — {{ memorial.short_name }} and those who shared his journey. The lineup refreshes when you revisit so different memories take the lead.</p>
+    <p class="gallery-hero__lead">Photographs and quiet moments from a life well lived — {{ memorial.short_name }} and those who shared his journey.</p>
     {% if photos %}
     <p class="gallery-hero__count">
       <span class="gallery-hero__count-num">{{ photos|length }}</span>
@@ -31,11 +34,10 @@
     <div class="gallery-mosaic" data-gallery-mosaic role="list" aria-label="Photo gallery">
       {% for photo in photos %}
       <figure
-        class="gallery-tile{% if forloop.first or forloop.counter0|divisibleby:5 %} gallery-tile--feature{% endif %}"
+        class="gallery-tile is-visible{% if forloop.first or forloop.counter0|divisibleby:5 %} gallery-tile--feature{% endif %}"
         data-gallery-tile
         data-gallery-index="{{ forloop.counter0 }}"
         role="listitem"
-        style="--gallery-i: {{ forloop.counter0 }};"
       >
         <button
           type="button"
@@ -44,9 +46,12 @@
           aria-label="View photo{% if photo.caption %}: {{ photo.caption }}{% endif %}"
         >
           <img
-            src="{{ photo.image.url }}"
+            class="gallery-tile__img"
+            src="{{ photo.grid_image_url }}"
             alt="{{ photo.caption|default:'Memorial photograph' }}"
-            loading="lazy"
+            width="960"
+            height="720"
+            {% if forloop.counter <= 4 %}loading="eager"{% if forloop.first %} fetchpriority="high"{% endif %}{% else %}loading="lazy"{% endif %}
             decoding="async"
             data-full-src="{{ photo.image.url }}"
           >
@@ -114,5 +119,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/gallery.js' %}?v=1" defer></script>
+<script src="{% static 'js/gallery.js' %}?v=2" defer></script>
 {% endblock %}

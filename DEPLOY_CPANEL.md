@@ -51,6 +51,22 @@ chmod 755 media
 
 Restart the Python application from cPanel after env changes or code updates.
 
+Full performance notes: **[docs/PERFORMANCE.md](docs/PERFORMANCE.md)**.
+
+## High traffic (many visitors at once)
+
+Before a funeral livestream or announcement that will drive heavy traffic:
+
+1. **Use MySQL**, not SQLite: `USE_SQLITE=False` with the `DB_*` variables above. SQLite cannot handle many simultaneous writes.
+2. Run **`python manage.py seed_memorial`** and **`python manage.py migrate`** so the site does not seed content on first visitor hits.
+3. Run **`python manage.py collectstatic --noinput`** so WhiteNoise serves compressed assets (not Django per request).
+4. Ensure **`var/cache/`** (or your `CACHE_DIR`) is writable — sessions use `cached_db` and public pages share a file cache across workers.
+5. Optional: point **`CACHE_BACKEND=django.core.cache.backends.redis.RedisCache`** and set Redis `LOCATION` if your host provides Redis (best for many Passenger workers).
+6. Monitor **`/health/`** — returns `{"status":"ok"}` when the app and database respond.
+7. After deploy, run **`python manage.py stress_test`** from the app venv (optional `--workers=48 --requests=500`) to verify error rate and latency before a live event.
+
+Run **`python manage.py check --deploy`** before go-live; resolve warnings about secret key, admin password, and SQLite.
+
 ## Deploy updates from GitHub
 
 ```bash

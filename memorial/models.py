@@ -27,6 +27,9 @@ class Tribute(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["is_approved", "-created_at"]),
+        ]
 
     def __str__(self):
         return f"Tribute from {self.author_name}"
@@ -98,6 +101,7 @@ class GalleryImage(models.Model):
     """Photo in the memorial gallery."""
 
     image = models.ImageField(upload_to="gallery/")
+    thumbnail = models.ImageField(upload_to="gallery/thumbnails/", blank=True)
     caption = models.CharField(max_length=300, blank=True)
     order = models.PositiveSmallIntegerField(default=0)
 
@@ -107,13 +111,41 @@ class GalleryImage(models.Model):
     def __str__(self):
         return self.caption or f"Gallery image {self.pk}"
 
-    def save(self, *args, **kwargs):
-        if self.pk is None:
-            from django.db.models import Max
+    def grid_image_url(self):
+        if self.thumbnail:
+            return self.thumbnail.url
+        return self.image.url
 
+    def save(self, *args, **kwargs):
+        from django.db.models import Max
+
+        from .image_utils import build_gallery_thumbnail
+
+        is_new = self.pk is None
+        previous_image = None
+        if not is_new:
+            previous_image = (
+                GalleryImage.objects.filter(pk=self.pk).values_list("image", flat=True).first()
+            )
+
+        if is_new:
             current_max = GalleryImage.objects.aggregate(m=Max("order"))["m"]
             self.order = (current_max if current_max is not None else -1) + 1
+
         super().save(*args, **kwargs)
+
+        image_changed = is_new or (self.image.name != previous_image)
+        if not image_changed or not self.image:
+            return
+
+        thumb_content = build_gallery_thumbnail(self.image)
+        if not thumb_content:
+            return
+
+        if self.thumbnail:
+            self.thumbnail.delete(save=False)
+        self.thumbnail.save(f"{self.pk}_grid.jpg", thumb_content, save=False)
+        GalleryImage.objects.filter(pk=self.pk).update(thumbnail=self.thumbnail.name)
 
 
 class VisitLocation(models.Model):

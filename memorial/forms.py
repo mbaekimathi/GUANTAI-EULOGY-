@@ -1,4 +1,5 @@
 from django import forms
+from django.core.validators import FileExtensionValidator
 from django.forms import modelformset_factory
 
 from .models import (
@@ -9,6 +10,12 @@ from .models import (
     Tribute,
     VisitLocation,
 )
+from .validators import ALLOWED_IMAGE_EXTENSIONS, validate_upload_image_size
+
+_IMAGE_VALIDATORS = [
+    FileExtensionValidator(allowed_extensions=ALLOWED_IMAGE_EXTENSIONS),
+    validate_upload_image_size,
+]
 
 
 class TributeForm(forms.ModelForm):
@@ -111,6 +118,10 @@ class HomePageContentForm(forms.ModelForm):
             ),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["portrait_image"].validators.extend(_IMAGE_VALIDATORS)
+
 
 class MemorialQuoteForm(forms.ModelForm):
     class Meta:
@@ -137,6 +148,10 @@ class GalleryImageForm(forms.ModelForm):
             "caption": forms.TextInput(attrs={"placeholder": "Optional caption"}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["image"].validators.extend(_IMAGE_VALIDATORS)
+
 
 class GalleryImageEditForm(forms.ModelForm):
     class Meta:
@@ -150,6 +165,7 @@ class GalleryImageEditForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["image"].required = False
         self.fields["image"].help_text = "Leave empty to keep the current photo."
+        self.fields["image"].validators.extend(_IMAGE_VALIDATORS)
 
 
 class VisitLocationForm(forms.ModelForm):

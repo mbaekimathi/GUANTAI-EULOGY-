@@ -14,6 +14,8 @@ app_name = "memorial"
 
 urlpatterns = [
 
+    path("health/", views.health, name="health"),
+
     path("", views.home, name="home"),
 
     path("home/", RedirectView.as_view(pattern_name="memorial:home", permanent=False)),

@@ -1,9 +1,32 @@
+import hashlib
 import re
+import time
 
 from django.conf import settings
+from django.core.cache import cache
+from django.db import transaction
 
+from .cache_utils import (
+    FEATURED_QUOTE_OBJECT_KEY,
+    GALLERY_LIST_KEY,
+    HOME_CONTENT_OBJECT_KEY,
+    HOME_CONTENT_PK_KEY,
+    HOME_PROGRAMME_PREFIX,
+    LIFE_CHAPTERS_LIST_KEY,
+    LIFE_STORY_PAGE_KEY,
+    PUBLIC_CACHE_SECONDS,
+    TRIBUTES_PAGE_KEY,
+    VISIT_DESTINATIONS_KEY,
+)
 from .maps import google_maps_directions_url, google_maps_place_url
-from .models import GalleryImage, HomePageContent, LifeChapter, Tribute, VisitLocation
+from .models import (
+    GalleryImage,
+    HomePageContent,
+    LifeChapter,
+    MemorialQuote,
+    Tribute,
+    VisitLocation,
+)
 
 DEFAULT_HOME_PAGE = {
     "intro_lead": (
@@ -176,23 +199,77 @@ LIFE_STORY_CHAPTER_META = [
     {"icon_id": "legacy", "short_label": "Legacy", "symbol": "🕊"},
 ]
 
+VISIT_LOCATION_SEED_LOCK_KEY = "memorial:visit_location_seed_lock"
+
+
 def ensure_visit_locations():
     """Create visit rows from settings so public pages match the admin location editor."""
-    for key, data in settings.MEMORIAL_VISIT.items():
-        VisitLocation.objects.get_or_create(
-            slug=data.get("slug", key),
-            defaults={
-                "title": data["title"],
-                "subtitle": data["subtitle"],
-                "place_name": data["place_name"],
-                "maps_query": data["maps_query"],
-                "order": 0 if key == "church" else 1,
-            },
-        )
+    expected_slugs = [
+        data.get("slug", key) for key, data in settings.MEMORIAL_VISIT.items()
+    ]
+    if VisitLocation.objects.filter(slug__in=expected_slugs).count() >= len(expected_slugs):
+        return
+
+    if not cache.add(VISIT_LOCATION_SEED_LOCK_KEY, 1, timeout=60):
+        for _ in range(100):
+            if VisitLocation.objects.filter(slug__in=expected_slugs).count() >= len(
+                expected_slugs
+            ):
+                return
+            time.sleep(0.02)
+
+    try:
+        for key, data in settings.MEMORIAL_VISIT.items():
+            VisitLocation.objects.get_or_create(
+                slug=data.get("slug", key),
+                defaults={
+                    "title": data["title"],
+                    "subtitle": data["subtitle"],
+                    "place_name": data["place_name"],
+                    "maps_query": data["maps_query"],
+                    "order": 0 if key == "church" else 1,
+                },
+            )
+    finally:
+        cache.delete(VISIT_LOCATION_SEED_LOCK_KEY)
+
+
+LIFE_CHAPTER_SEED_LOCK_KEY = "memorial:life_chapter_seed_lock"
+_FEATURED_QUOTE_EMPTY = "none"
+
+
+def _ensure_life_chapters_seeded():
+    if LifeChapter.objects.exists():
+        return
+    if cache.add(LIFE_CHAPTER_SEED_LOCK_KEY, 1, timeout=60):
+        try:
+            if not LifeChapter.objects.exists():
+                seed_default_life_chapters()
+        finally:
+            cache.delete(LIFE_CHAPTER_SEED_LOCK_KEY)
+    else:
+        for _ in range(100):
+            if LifeChapter.objects.exists():
+                return
+            time.sleep(0.02)
+        if not LifeChapter.objects.exists():
+            seed_default_life_chapters()
+
+
+def get_life_chapters_queryset():
+    _ensure_life_chapters_seeded()
+    return LifeChapter.objects.order_by("order", "year").only(
+        "id", "year", "title", "body", "order"
+    )
 
 
 def get_life_chapters():
-    return LifeChapter.objects.order_by("order", "year")
+    cached = cache.get(LIFE_CHAPTERS_LIST_KEY)
+    if cached is not None:
+        return cached
+    chapters = list(get_life_chapters_queryset())
+    cache.set(LIFE_CHAPTERS_LIST_KEY, chapters, PUBLIC_CACHE_SECONDS)
+    return chapters
 
 
 def seed_default_life_chapters():
@@ -312,11 +389,47 @@ def build_tribute_items(tributes):
 
 
 def get_approved_tributes():
-    return Tribute.objects.filter(is_approved=True).order_by("-created_at")
+    return (
+        Tribute.objects.filter(is_approved=True)
+        .order_by("-created_at")
+        .only("id", "author_name", "relationship", "message", "created_at")
+    )
 
 
 GALLERY_ROTATE_SESSION_KEY = "gallery_display_offset"
 GALLERY_PREVIEW_SESSION_KEY = "gallery_preview_offset"
+
+
+def _session_non_negative_int(session, key, default=0):
+    raw = session.get(key, default)
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        value = default
+    return max(0, value)
+
+
+def public_visitor_seed(request):
+    """
+    Identify visitors for gallery ordering without touching request.session
+    (keeps anonymous traffic off the session database under load).
+    """
+    if request is None:
+        return "anonymous"
+    session_cookie = request.COOKIES.get(settings.SESSION_COOKIE_NAME)
+    if session_cookie:
+        return session_cookie
+    forwarded = (request.META.get("HTTP_X_FORWARDED_FOR") or "").split(",")[0].strip()
+    client_ip = forwarded or request.META.get("REMOTE_ADDR") or "unknown"
+    user_agent = (request.META.get("HTTP_USER_AGENT") or "")[:120]
+    return f"{client_ip}|{user_agent}"
+
+
+def _gallery_rotation_offset(visitor_seed, salt, count):
+    if count < 2:
+        return 0
+    digest = hashlib.sha256(f"{visitor_seed}:{salt}".encode()).hexdigest()
+    return int(digest[:12], 16) % count
 
 
 def normalize_gallery_orders():
@@ -338,7 +451,16 @@ def get_gallery_photos():
 
 
 def _gallery_ordered_list():
-    return list(get_gallery_photos())
+    cached = cache.get(GALLERY_LIST_KEY)
+    if cached is not None:
+        return cached
+    photos = list(
+        GalleryImage.objects.order_by("order", "id").only(
+            "id", "image", "thumbnail", "caption", "order"
+        )
+    )
+    cache.set(GALLERY_LIST_KEY, photos, PUBLIC_CACHE_SECONDS)
+    return photos
 
 
 def _rotate_gallery_list(photos, offset):
@@ -351,38 +473,45 @@ def _rotate_gallery_list(photos, offset):
 
 
 def get_gallery_photos_display(request):
-    """
-    Public gallery order: rotate on each visit so the same photos are not always first.
-    """
+    """Public gallery order — rotated per visitor, no session write."""
     photos = _gallery_ordered_list()
     if len(photos) < 2 or request is None:
         return photos
-
-    offset = int(request.session.get(GALLERY_ROTATE_SESSION_KEY, 0))
-    request.session[GALLERY_ROTATE_SESSION_KEY] = (offset + 1) % len(photos)
-    request.session.modified = True
+    offset = _gallery_rotation_offset(
+        public_visitor_seed(request), GALLERY_ROTATE_SESSION_KEY, len(photos)
+    )
     return _rotate_gallery_list(photos, offset)
 
 
-def get_gallery_preview(request, limit=4):
-    """Home page gallery strip — separate rotation from full gallery page."""
-    photos = _gallery_ordered_list()
+def _gallery_preview_from_list(photos, request, limit=4):
     if not photos:
         return []
     limit = min(limit, len(photos))
     if len(photos) < 2 or request is None:
         return photos[:limit]
-
-    offset = int(request.session.get(GALLERY_PREVIEW_SESSION_KEY, 0)) % len(photos)
-    request.session[GALLERY_PREVIEW_SESSION_KEY] = (offset + 1) % len(photos)
-    request.session.modified = True
+    offset = _gallery_rotation_offset(
+        public_visitor_seed(request), GALLERY_PREVIEW_SESSION_KEY, len(photos)
+    )
     return [photos[(offset + i) % len(photos)] for i in range(limit)]
 
 
+def get_gallery_preview(request, limit=4):
+    """Home page gallery strip — separate salt from full gallery page."""
+    return _gallery_preview_from_list(_gallery_ordered_list(), request, limit)
+
+
 def get_visit_destinations():
+    cached = cache.get(VISIT_DESTINATIONS_KEY)
+    if cached is not None:
+        return cached
+
     ensure_visit_locations()
-    locations = VisitLocation.objects.order_by("order", "slug")
-    if locations.exists():
+    locations = list(
+        VisitLocation.objects.order_by("order", "slug").only(
+            "slug", "title", "subtitle", "place_name", "maps_query", "order"
+        )
+    )
+    if locations:
         destinations = []
         for loc in locations:
             destinations.append(
@@ -397,6 +526,7 @@ def get_visit_destinations():
                     "directions_url": google_maps_directions_url(loc.maps_query),
                 }
             )
+        cache.set(VISIT_DESTINATIONS_KEY, destinations, PUBLIC_CACHE_SECONDS)
         return destinations
 
     destinations = []
@@ -409,6 +539,7 @@ def get_visit_destinations():
                 "directions_url": google_maps_directions_url(data["maps_query"]),
             }
         )
+    cache.set(VISIT_DESTINATIONS_KEY, destinations, PUBLIC_CACHE_SECONDS)
     return destinations
 
 
@@ -430,18 +561,114 @@ def parse_programme_service(text):
     return [line.strip() for line in (text or "").splitlines() if line.strip()]
 
 
+def get_memorial_quote_for_admin():
+    """Single quote row for the dashboard — avoids saving with instance=None."""
+    quote = MemorialQuote.objects.filter(is_active=True).first()
+    if quote is None:
+        quote = MemorialQuote.objects.order_by("id").first()
+    if quote is None:
+        quote = MemorialQuote.objects.create(
+            text="Those who live in hearts we leave behind do not die.",
+            attribution="Thomas Campbell",
+            is_active=True,
+        )
+    return quote
+
+
+def get_featured_quote():
+    cached = cache.get(FEATURED_QUOTE_OBJECT_KEY)
+    if cached == _FEATURED_QUOTE_EMPTY:
+        return None
+    if cached is not None:
+        return cached
+    quote = MemorialQuote.objects.filter(is_active=True).only(
+        "id", "text", "attribution"
+    ).first()
+    cache.set(
+        FEATURED_QUOTE_OBJECT_KEY,
+        quote if quote else _FEATURED_QUOTE_EMPTY,
+        PUBLIC_CACHE_SECONDS,
+    )
+    return quote
+
+
 def get_home_page_content():
-    instance = HomePageContent.objects.first()
+    cached = cache.get(HOME_CONTENT_OBJECT_KEY)
+    if cached is not None:
+        return cached
+
+    instance = HomePageContent.objects.order_by("pk").first()
     if instance:
+        cache.set(HOME_CONTENT_OBJECT_KEY, instance, PUBLIC_CACHE_SECONDS)
+        cache.set(HOME_CONTENT_PK_KEY, instance.pk, PUBLIC_CACHE_SECONDS)
         return instance
-    return HomePageContent.objects.create(**DEFAULT_HOME_PAGE)
+    with transaction.atomic():
+        instance = HomePageContent.objects.order_by("pk").first()
+        if instance:
+            cache.set(HOME_CONTENT_OBJECT_KEY, instance, PUBLIC_CACHE_SECONDS)
+            cache.set(HOME_CONTENT_PK_KEY, instance.pk, PUBLIC_CACHE_SECONDS)
+            return instance
+        instance = HomePageContent.objects.create(**DEFAULT_HOME_PAGE)
+        cache.set(HOME_CONTENT_OBJECT_KEY, instance, PUBLIC_CACHE_SECONDS)
+        cache.set(HOME_CONTENT_PK_KEY, instance.pk, PUBLIC_CACHE_SECONDS)
+        return instance
+
+
+def build_home_page_context(request):
+    home_content = get_home_page_content()
+    programme_key = f"{HOME_PROGRAMME_PREFIX}:{home_content.pk}:{home_content.updated_at.timestamp()}"
+    programme = cache.get(programme_key)
+    if programme is None:
+        programme = {
+            "programme_timeline": parse_programme_timeline(
+                home_content.programme_timeline
+            ),
+            "programme_service": parse_programme_service(
+                home_content.programme_service
+            ),
+        }
+        cache.set(programme_key, programme, PUBLIC_CACHE_SECONDS)
+    photos = _gallery_ordered_list()
+    return {
+        "home_content": home_content,
+        **programme,
+        "featured_quote": get_featured_quote(),
+        "gallery_preview": _gallery_preview_from_list(photos, request, limit=4),
+    }
+
+
+def get_life_story_page_context():
+    cached = cache.get(LIFE_STORY_PAGE_KEY)
+    if cached is not None:
+        return cached
+    memorial = settings.MEMORIAL
+    birth = memorial.get("birth_year", 1930)
+    death = memorial.get("death_year", birth)
+    context = {
+        "story_items": build_life_story_items(get_life_chapters()),
+        "memorial_years": max(0, death - birth),
+    }
+    cache.set(LIFE_STORY_PAGE_KEY, context, PUBLIC_CACHE_SECONDS)
+    return context
+
+
+def get_tributes_page_context():
+    cached = cache.get(TRIBUTES_PAGE_KEY)
+    if cached is not None:
+        return cached
+    tribute_list = list(get_approved_tributes())
+    context = {
+        "tributes": tribute_list,
+        "tribute_items": build_tribute_items(tribute_list),
+    }
+    cache.set(TRIBUTES_PAGE_KEY, context, PUBLIC_CACHE_SECONDS)
+    return context
 
 
 def resolve_visit_maps_query(place_slug):
-    ensure_visit_locations()
-    loc = VisitLocation.objects.filter(slug=place_slug).first()
-    if loc:
-        return loc.maps_query
+    for dest in get_visit_destinations():
+        if dest.get("slug") == place_slug or dest.get("key") == place_slug:
+            return dest["maps_query"]
     locations = settings.MEMORIAL_VISIT
     if place_slug in locations:
         return locations[place_slug]["maps_query"]

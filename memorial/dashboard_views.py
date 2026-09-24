@@ -2,19 +2,22 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
+from .cache_utils import invalidate_public_content_caches
 from .admin_auth import (
     credentials_valid,
     is_memorial_admin,
     memorial_admin_login,
     memorial_admin_logout,
     require_memorial_admin,
+    safe_admin_redirect_target,
 )
 from .content_data import (
     ensure_visit_locations,
     get_gallery_photos,
     normalize_gallery_orders,
     get_home_page_content,
-    get_life_chapters,
+    get_life_chapters_queryset,
+    get_memorial_quote_for_admin,
 )
 from .forms import (
     GalleryImageEditForm,
@@ -60,8 +63,9 @@ def dashboard_login(request):
         if credentials_valid(username, password):
             memorial_admin_login(request)
             messages.success(request, "Welcome. You are signed in to the admin dashboard.")
-            if next_url.startswith("/"):
-                return redirect(next_url)
+            target = safe_admin_redirect_target(next_url, request)
+            if target:
+                return redirect(target)
             return redirect("memorial:dashboard_home")
         messages.error(request, "Invalid login or password. Please try again.")
 
@@ -86,10 +90,7 @@ def dashboard_logout(request):
 @require_memorial_admin
 @require_http_methods(["GET", "POST"])
 def dashboard_home_update(request):
-    quote_instance = MemorialQuote.objects.filter(is_active=True).first()
-    if quote_instance is None:
-        quote_instance = MemorialQuote.objects.order_by("id").first()
-
+    quote_instance = get_memorial_quote_for_admin()
     home_instance = get_home_page_content()
 
     if request.method == "POST":
@@ -105,9 +106,12 @@ def dashboard_home_update(request):
             prefix="home",
         )
         if quote_form.is_valid() and home_form.is_valid():
-            quote_form.save()
+            quote = quote_form.save()
+            if quote.is_active:
+                MemorialQuote.objects.exclude(pk=quote.pk).update(is_active=False)
             saved_home = home_form.save()
             HomePageContent.objects.exclude(pk=saved_home.pk).delete()
+            invalidate_public_content_caches()
             messages.success(request, "Home page updated successfully.")
             return redirect("memorial:dashboard_home_update")
     else:
@@ -128,7 +132,7 @@ def dashboard_home_update(request):
 @require_memorial_admin
 @require_http_methods(["GET", "POST"])
 def dashboard_life_story(request):
-    queryset = get_life_chapters()
+    queryset = get_life_chapters_queryset()
     formset = LifeChapterAdminFormSet(
         request.POST or None,
         queryset=queryset,
@@ -183,7 +187,12 @@ def dashboard_tributes(request):
 def dashboard_gallery(request):
     if request.method == "POST":
         if "delete_id" in request.POST:
-            photo = get_object_or_404(GalleryImage, pk=request.POST["delete_id"])
+            try:
+                delete_pk = int(request.POST["delete_id"])
+            except (TypeError, ValueError):
+                messages.error(request, "Could not remove photo — invalid request.")
+                return redirect("memorial:dashboard_gallery")
+            photo = get_object_or_404(GalleryImage, pk=delete_pk)
             photo.image.delete(save=False)
             photo.delete()
             normalize_gallery_orders()

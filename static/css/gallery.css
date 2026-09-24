@@ -201,21 +201,14 @@
   }
 }
 
-/* Tiles */
+/* Tiles — visible immediately; image fades in once when loaded */
 .gallery-tile {
   margin: 0;
   min-width: 0;
-  opacity: 0;
-  transform: translate3d(0, 20px, 0) scale(0.98);
-  transition:
-    opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: calc(var(--gallery-i, 0) * 55ms);
 }
 
 .gallery-tile.is-visible {
   opacity: 1;
-  transform: translate3d(0, 0, 0) scale(1);
 }
 
 .gallery-tile__trigger {
@@ -241,13 +234,25 @@
   outline-offset: 3px;
 }
 
-.gallery-tile__trigger img {
+.gallery-tile__trigger img,
+.gallery-tile__img {
   display: block;
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
   vertical-align: middle;
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  background: var(--color-surface);
+  transition:
+    opacity 0.35s ease,
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gallery-tile__img:not(.is-loaded) {
+  opacity: 0;
+}
+
+.gallery-tile__img.is-loaded {
+  opacity: 1;
 }
 
 .gallery-tile__frame {
@@ -614,9 +619,8 @@ html[data-theme="light"] .gallery-lightbox__nav {
     animation: none;
   }
 
-  .gallery-tile {
-    opacity: 1;
-    transform: none;
+  .gallery-tile__img {
+    opacity: 1 !important;
     transition: none;
   }
 

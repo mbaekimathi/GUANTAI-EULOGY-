@@ -4,7 +4,17 @@
 {% block title %}In Loving Memory{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/home.css' %}?v=8">
+<link rel="preload" href="{% static 'css/home.css' %}?v=8" as="style">
+<link
+  rel="stylesheet"
+  href="{% static 'css/home.css' %}?v=8"
+  media="print"
+  onload="this.media='all'"
+>
+<noscript><link rel="stylesheet" href="{% static 'css/home.css' %}?v=8"></noscript>
+{% if home_content.portrait_image %}
+<link rel="preload" as="image" href="{{ home_content.portrait_image.url }}" fetchpriority="high">
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -276,7 +286,7 @@
     <div class="gallery-grid gallery-grid--compact" data-reveal-stagger>
       {% for photo in gallery_preview %}
       <figure class="gallery-item">
-        <img src="{{ photo.image.url }}" alt="{{ photo.caption|default:'Memorial photograph' }}" loading="lazy">
+        <img src="{{ photo.grid_image_url }}" alt="{{ photo.caption|default:'Memorial photograph' }}" width="480" height="360" loading="lazy" decoding="async">
       </figure>
       {% endfor %}
     </div>
@@ -289,5 +299,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/home.js' %}?v=6"></script>
+<script src="{% static 'js/home.js' %}?v=6" defer></script>
 {% endblock %}

@@ -1,260 +1,132 @@
-from django.conf import settings
-from django.http import Http404
-
+from django.core.cache import cache
+from django.db import connection
+from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
+from django.views.decorators.http import require_GET, require_http_methods
 
-from django.views.decorators.cache import never_cache
-
-from django.views.decorators.http import require_http_methods
-
-
-
+from .cache_utils import HEALTH_CACHE_SECONDS, HEALTH_DB_OK_KEY
 from .content_data import (
-
-    get_approved_tributes,
-
+    build_home_page_context,
     get_gallery_photos_display,
-    get_gallery_preview,
-
-    get_home_page_content,
-
-    parse_programme_service,
-
-    parse_programme_timeline,
-
-    build_life_story_items,
-
-    build_tribute_items,
-
-    get_life_chapters,
-
+    get_life_story_page_context,
+    get_tributes_page_context,
     get_visit_destinations,
-
     resolve_visit_maps_query,
-
 )
-
-
 from .maps import google_maps_directions_url
-
-from .models import MemorialQuote
-
+from .view_cache import cache_public_get
 
 
+@require_GET
+def health(request):
+    """Load-balancer probe; DB check cached briefly to avoid hammering under poll traffic."""
+    try:
+        if cache.get(HEALTH_DB_OK_KEY):
+            return JsonResponse({"status": "ok"})
+    except Exception:
+        pass
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+    except Exception:
+        return JsonResponse({"status": "error"}, status=503)
+    try:
+        cache.set(HEALTH_DB_OK_KEY, True, HEALTH_CACHE_SECONDS)
+    except Exception:
+        pass
+    return JsonResponse({"status": "ok"})
 
 
-def _visit_destinations():
-
-    return get_visit_destinations()
-
-
-
-
-
-@never_cache
-
+@cache_public_get(max_age=120)
 def home(request):
-
-    home_content = get_home_page_content()
-
-    quote = MemorialQuote.objects.filter(is_active=True).first()
-
-    gallery_preview = get_gallery_preview(request, limit=4)
-
+    context = build_home_page_context(request)
     return render(
-
         request,
-
         "memorial/home.html",
-
         {
-
             "page_title": "In Loving Memory",
-
-            "home_content": home_content,
-
-            "programme_timeline": parse_programme_timeline(home_content.programme_timeline),
-
-            "programme_service": parse_programme_service(home_content.programme_service),
-
-            "featured_quote": quote,
-
-            "gallery_preview": gallery_preview,
-
+            **context,
         },
-
     )
 
 
-
-
-
-@never_cache
-
+@cache_public_get(max_age=300)
 def life_story(request):
-
-    chapters = get_life_chapters()
-    memorial = settings.MEMORIAL
-    birth = memorial.get("birth_year", 1930)
-    death = memorial.get("death_year", birth)
-    memorial_years = max(0, death - birth)
-
     return render(
-
         request,
-
         "memorial/life_story.html",
-
         {
             "page_title": "Life Story",
-            "story_items": build_life_story_items(chapters),
-            "memorial_years": memorial_years,
+            **get_life_story_page_context(),
         },
-
     )
 
 
-
-
-
-@never_cache
-
+@cache_public_get(max_age=600)
 def legacy(request):
-
     return render(
-
         request,
-
         "memorial/legacy.html",
-
         {"page_title": "Legacy & Values"},
-
     )
 
 
-
-
-
-@never_cache
-
+@cache_public_get(max_age=600)
 def family(request):
-
     return render(
-
         request,
-
         "memorial/family.html",
-
         {"page_title": "Family & Gratitude"},
-
     )
 
 
-
-
-
-@never_cache
-
+@cache_public_get(max_age=120)
 @require_http_methods(["GET"])
-
 def tributes(request):
-
-    tribute_list = get_approved_tributes()
-
     return render(
-
         request,
-
         "memorial/tributes.html",
-
         {
-
             "page_title": "Tributes & Memories",
-
-            "tributes": tribute_list,
-
-            "tribute_items": build_tribute_items(tribute_list),
-
+            **get_tributes_page_context(),
         },
-
     )
 
 
-
-
-
-@never_cache
-
+@cache_public_get(max_age=600)
 def service(request):
-
     return render(
-
         request,
-
         "memorial/service.html",
-
         {"page_title": "Memorial Service"},
-
     )
 
 
-
-
-
-@never_cache
-
+@cache_public_get(max_age=300)
 def visit(request):
-
     return render(
-
         request,
-
         "memorial/visit.html",
-
         {
-
             "page_title": "Visit & Directions",
-
-            "visit_destinations": _visit_destinations(),
-
+            "visit_destinations": get_visit_destinations(),
         },
-
     )
-
-
-
 
 
 def visit_go(request, place):
-
     maps_query = resolve_visit_maps_query(place)
-
     if not maps_query:
-
         raise Http404("Unknown visit location")
-
     url = google_maps_directions_url(maps_query)
-
     return redirect(url)
 
 
-
-
-
-@never_cache
-
+@cache_public_get(max_age=120)
 def gallery(request):
-
     photos = get_gallery_photos_display(request)
-
     return render(
-
         request,
-
         "memorial/gallery.html",
-
         {"page_title": "Gallery", "photos": photos},
-
     )
-
-
