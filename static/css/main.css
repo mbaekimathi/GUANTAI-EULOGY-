@@ -761,28 +761,32 @@ body.nav-open {
   }
 
   .site-layout {
-    display: grid;
-    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+    display: block;
     max-width: none;
     width: 100%;
     margin: 0;
-    align-items: start;
   }
 
   .site-sidebar {
-    position: sticky;
+    position: fixed;
     top: calc(var(--header-h) + var(--safe-top));
-    align-self: start;
-    width: 100%;
+    left: 0;
+    bottom: 0;
+    z-index: 35;
+    align-self: auto;
+    width: var(--sidebar-w);
     max-width: none;
     min-width: 0;
     flex: none;
-    height: calc(100dvh - var(--header-h) - var(--safe-top));
-    max-height: calc(100dvh - var(--header-h) - var(--safe-top));
+    height: auto;
+    max-height: none;
     transform: none;
-    padding: 1.75rem 1.25rem 2rem;
+    padding: 1.75rem 1.25rem calc(2rem + var(--safe-bottom));
     padding-left: max(var(--layout-pad-x), var(--safe-left));
     padding-right: 1rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .sidebar-backdrop {
@@ -805,6 +809,10 @@ body.nav-open {
   .site-main {
     flex: none;
     min-width: 0;
+    width: auto;
+    max-width: none;
+    margin-left: var(--sidebar-w);
+    box-sizing: border-box;
     padding: 2rem var(--layout-pad-x) 4rem clamp(1.25rem, 2vw, 2.5rem);
   }
 }
@@ -2354,6 +2362,50 @@ html[data-theme="light"] .login-card {
 
 .admin-gallery-item__meta {
   padding: 0.85rem 1rem 1rem;
+}
+
+.admin-gallery-item__actions {
+  margin-top: 0.65rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-gallery-item__actions .btn {
+  flex: 1 1 auto;
+  min-width: 5.5rem;
+}
+
+.admin-gallery-item__delete {
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.admin-gallery-item__delete .btn {
+  width: 100%;
+}
+
+.admin-gallery-edit-preview {
+  display: block;
+  width: 100%;
+  max-width: 22rem;
+  margin: 0 0 1.25rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border-subtle);
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.admin-toolbar--inline {
+  margin-top: 1rem;
+  padding-top: 0;
+  border-top: none;
+}
+
+.form-field__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
 }
 
 .gallery-grid {

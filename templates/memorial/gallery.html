@@ -1,50 +1,118 @@
 {% extends "base.html" %}
+{% load static %}
 
-
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/gallery.css' %}?v=1">
+{% endblock %}
 
 {% block content %}
-<div class="page-content">
-<header class="page-hero">
-
-  <h2 class="page-hero__title">Gallery</h2>
-
-  <p class="page-hero__lead">Photographs and moments from a life well lived.</p>
-
-</header>
-
-
-
-{% if photos %}
-
-<div class="gallery-grid">
-
-  {% for photo in photos %}
-
-  <figure class="gallery-item">
-
-    <img src="{{ photo.image.url }}" alt="{{ photo.caption|default:'Memorial photograph' }}" loading="lazy">
-
-    {% if photo.caption %}
-
-    <figcaption class="gallery-item__caption">{{ photo.caption }}</figcaption>
-
+<div class="page-content gallery-page" data-gallery-page>
+  <header class="gallery-hero" data-gallery-reveal>
+    <div class="gallery-hero__glow" aria-hidden="true"></div>
+    <p class="gallery-hero__eyebrow">Through the years</p>
+    <h2 class="page-hero__title gallery-hero__title">Gallery</h2>
+    <p class="gallery-hero__lead">Photographs and quiet moments from a life well lived — {{ memorial.short_name }} and those who shared his journey. The lineup refreshes when you revisit so different memories take the lead.</p>
+    {% if photos %}
+    <p class="gallery-hero__count">
+      <span class="gallery-hero__count-num">{{ photos|length }}</span>
+      {% if photos|length == 1 %}memory preserved{% else %}memories preserved{% endif %}
+    </p>
     {% endif %}
+  </header>
 
-  </figure>
+  {% if photos %}
+  <div class="gallery-stage">
+    <div class="gallery-stage__ambient" aria-hidden="true">
+      <span class="gallery-stage__orb gallery-stage__orb--1"></span>
+      <span class="gallery-stage__orb gallery-stage__orb--2"></span>
+      <span class="gallery-stage__orb gallery-stage__orb--3"></span>
+    </div>
 
-  {% endfor %}
+    <div class="gallery-mosaic" data-gallery-mosaic role="list" aria-label="Photo gallery">
+      {% for photo in photos %}
+      <figure
+        class="gallery-tile{% if forloop.first or forloop.counter0|divisibleby:5 %} gallery-tile--feature{% endif %}"
+        data-gallery-tile
+        data-gallery-index="{{ forloop.counter0 }}"
+        role="listitem"
+        style="--gallery-i: {{ forloop.counter0 }};"
+      >
+        <button
+          type="button"
+          class="gallery-tile__trigger"
+          data-gallery-open
+          aria-label="View photo{% if photo.caption %}: {{ photo.caption }}{% endif %}"
+        >
+          <img
+            src="{{ photo.image.url }}"
+            alt="{{ photo.caption|default:'Memorial photograph' }}"
+            loading="lazy"
+            decoding="async"
+            data-full-src="{{ photo.image.url }}"
+          >
+          <span class="gallery-tile__frame" aria-hidden="true"></span>
+          <span class="gallery-tile__shine" aria-hidden="true"></span>
+          <span class="gallery-tile__zoom" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M15 15l5 5M10 17a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+            </svg>
+          </span>
+        </button>
+        {% if photo.caption %}
+        <figcaption class="gallery-tile__caption">{{ photo.caption }}</figcaption>
+        {% endif %}
+      </figure>
+      {% endfor %}
+    </div>
+  </div>
 
-</div>
+  <div class="gallery-lightbox" data-gallery-lightbox hidden aria-hidden="true">
+    <div class="gallery-lightbox__backdrop" data-gallery-close tabindex="-1"></div>
+    <div
+      class="gallery-lightbox__panel"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Enlarged photo"
+      data-gallery-dialog
+    >
+      <button type="button" class="gallery-lightbox__close" data-gallery-close aria-label="Close">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button type="button" class="gallery-lightbox__nav gallery-lightbox__nav--prev" data-gallery-prev aria-label="Previous photo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M14 6l-6 6 6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button type="button" class="gallery-lightbox__nav gallery-lightbox__nav--next" data-gallery-next aria-label="Next photo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M10 6l6 6-6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <figure class="gallery-lightbox__figure">
+        <img class="gallery-lightbox__img" src="" alt="" data-gallery-lightbox-img>
+        <figcaption class="gallery-lightbox__caption" data-gallery-lightbox-caption hidden></figcaption>
+      </figure>
+      <p class="gallery-lightbox__counter" data-gallery-lightbox-counter aria-live="polite"></p>
+    </div>
+  </div>
+  {% else %}
+  <article class="gallery-empty" data-gallery-reveal>
+    <div class="gallery-empty__icon" aria-hidden="true">📷</div>
+    <h3 class="gallery-empty__title">Photos coming soon</h3>
+    <p class="gallery-empty__text">Images will appear here once they are added from the family dashboard.</p>
+    <a class="btn btn--primary" href="{% url 'memorial:home' %}">Return home</a>
+  </article>
+  {% endif %}
 
-{% else %}
-
-<article class="card">
-
-  <p class="card__body">Photos will appear here once they are added from the admin dashboard.</p>
-
-</article>
-
-{% endif %}
+  <nav class="gallery-actions btn-row" aria-label="Continue exploring" data-gallery-reveal>
+    <a class="btn btn--primary" href="{% url 'memorial:life_story' %}">Life story</a>
+    <a class="btn btn--ghost" href="{% url 'memorial:tributes' %}">View tributes</a>
+  </nav>
 </div>
 {% endblock %}
 
+{% block extra_js %}
+<script src="{% static 'js/gallery.js' %}?v=1" defer></script>
+{% endblock %}

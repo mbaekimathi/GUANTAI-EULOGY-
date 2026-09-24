@@ -4,7 +4,7 @@
 <div class="page-content">
 <header class="page-hero">
   <h2 class="page-hero__title">Memorial service</h2>
-  <p class="page-hero__lead">Details for honoring {{ memorial.full_name }}. Update times and venues with the family’s final arrangements.</p>
+  <p class="page-hero__lead">Honoring {{ memorial.full_name }} — homegoing and burial on {{ memorial.burial_date_display }}.</p>
   <div class="btn-row btn-row--tight">
     <a class="btn btn--primary" href="{% url 'memorial:visit' %}">Get directions (church or home)</a>
   </div>
@@ -12,16 +12,16 @@
 
 <dl class="service-details">
   <div class="card">
-    <dt>Date</dt>
-    <dd>To be announced by the family</dd>
+    <dt>Burial date</dt>
+    <dd>{{ memorial.burial_date_display }}</dd>
   </div>
   <div class="card">
     <dt>Venue</dt>
-    <dd>Family home / parish — Murang'a County</dd>
+    <dd>{{ memorial.burial_venue }}</dd>
   </div>
   <div class="card">
-    <dt>Viewing</dt>
-    <dd>As communicated to relatives and close friends</dd>
+    <dt>Passed on</dt>
+    <dd>{{ memorial.death_date_display }} (see home page for the day’s programme)</dd>
   </div>
   <div class="card">
     <dt>Family contact</dt>

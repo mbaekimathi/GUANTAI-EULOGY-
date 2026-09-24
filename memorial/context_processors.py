@@ -10,8 +10,6 @@ DASHBOARD_NAV = [
 
     ("home", "Home page", "dashboard_home_update"),
 
-    ("eulogy", "Eulogy", "dashboard_eulogy"),
-
     ("life", "Life story", "dashboard_life_story"),
 
     ("tributes", "Tributes", "dashboard_tributes"),
@@ -27,8 +25,6 @@ DASHBOARD_NAV = [
 PUBLIC_NAV = [
 
     ("home", "Home", "home"),
-
-    ("eulogy", "Eulogy", "eulogy"),
 
     ("life", "Life Story", "life_story"),
 

@@ -24,7 +24,7 @@
         Open in Google Maps
       </a>
       <a class="btn btn--ghost"
-         href="{{ dest.maps_url }}"
+         href="{{ dest.maps_url|default:dest.directions_url }}"
          target="_blank"
          rel="noopener noreferrer">
         Preview location

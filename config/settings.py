@@ -15,17 +15,13 @@ SECRET_KEY = os.getenv(
     "django-insecure-dev-only-change-before-production",
 )
 DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() in ("1", "true", "yes")
-ALLOWED_HOSTS = [
-    h.strip()
-    for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-    if h.strip()
-]
+_DEFAULT_ALLOWED_HOSTS = "localhost,127.0.0.1,guantai.projectlucas.co.ke"
+_allowed_raw = os.getenv("ALLOWED_HOSTS", "").strip() or _DEFAULT_ALLOWED_HOSTS
+ALLOWED_HOSTS = [h.strip() for h in _allowed_raw.split(",") if h.strip()]
 
-CSRF_TRUSTED_ORIGINS = [
-    o.strip()
-    for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
-    if o.strip()
-]
+_DEFAULT_CSRF_ORIGINS = "https://guantai.projectlucas.co.ke"
+_csrf_raw = os.getenv("CSRF_TRUSTED_ORIGINS", "").strip() or _DEFAULT_CSRF_ORIGINS
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_raw.split(",") if o.strip()]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -137,6 +133,10 @@ MEMORIAL = {
     "short_name": "Mzee Fredrick",
     "birth_year": 1930,
     "death_year": 2026,
+    "death_date_display": "17 September 2026",
+    "burial_date_display": "Thursday, 25 September 2026",
+    "burial_date_short": "25 September 2026",
+    "burial_venue": "PCEA Mbogori Church, Chogoria",
     "birth_place": "Meru County, Kenya",
     "tagline": "A life rooted in faith, family, and quiet strength.",
 }
@@ -147,14 +147,15 @@ MEMORIAL_VISIT = {
         "slug": "church",
         "title": "Church",
         "subtitle": "Service & prayers",
-        "place_name": "Parish church — Murang'a",
-        "maps_query": "Murang'a Catholic Church, Murang'a, Kenya",
+        "place_name": "PCEA Mbogori Church, Chogoria",
+        # Google Maps pin (Mbogori Primary School / church area)
+        "maps_query": "-0.2002388,37.6044681",
     },
     "home": {
         "slug": "home",
         "title": "Family home",
         "subtitle": "Viewing & gathering",
         "place_name": "Mugira–Guantai family home",
-        "maps_query": "Murang'a County, Kenya",
+        "maps_query": "-0.2002388,37.6044681",
     },
 }

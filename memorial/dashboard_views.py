@@ -10,14 +10,14 @@ from .admin_auth import (
     require_memorial_admin,
 )
 from .content_data import (
-    DEFAULT_EULOGY,
     ensure_visit_locations,
     get_gallery_photos,
+    normalize_gallery_orders,
     get_home_page_content,
     get_life_chapters,
 )
 from .forms import (
-    EulogyContentForm,
+    GalleryImageEditForm,
     GalleryImageForm,
     HomePageContentForm,
     LifeChapterAdminFormSet,
@@ -27,7 +27,6 @@ from .forms import (
     VisitLocationForm,
 )
 from .models import (
-    EulogyContent,
     GalleryImage,
     HomePageContent,
     LifeChapter,
@@ -128,29 +127,6 @@ def dashboard_home_update(request):
 
 @require_memorial_admin
 @require_http_methods(["GET", "POST"])
-def dashboard_eulogy(request):
-    instance = EulogyContent.objects.first()
-    if request.method == "POST":
-        form = EulogyContentForm(request.POST, instance=instance)
-        if form.is_valid():
-            saved = form.save()
-            EulogyContent.objects.exclude(pk=saved.pk).delete()
-            messages.success(request, "Eulogy updated successfully.")
-            return redirect("memorial:dashboard_eulogy")
-    elif instance:
-        form = EulogyContentForm(instance=instance)
-    else:
-        form = EulogyContentForm(initial=DEFAULT_EULOGY)
-
-    return render(
-        request,
-        "memorial/dashboard/eulogy.html",
-        {"page_title": "Eulogy Update", "form": form},
-    )
-
-
-@require_memorial_admin
-@require_http_methods(["GET", "POST"])
 def dashboard_life_story(request):
     queryset = get_life_chapters()
     formset = LifeChapterAdminFormSet(
@@ -210,12 +186,14 @@ def dashboard_gallery(request):
             photo = get_object_or_404(GalleryImage, pk=request.POST["delete_id"])
             photo.image.delete(save=False)
             photo.delete()
+            normalize_gallery_orders()
             messages.success(request, "Photo removed from the gallery.")
             return redirect("memorial:dashboard_gallery")
 
         form = GalleryImageForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
+            normalize_gallery_orders()
             messages.success(request, "Photo added to the gallery.")
             return redirect("memorial:dashboard_gallery")
         return render(
@@ -235,6 +213,33 @@ def dashboard_gallery(request):
             "page_title": "Gallery Update",
             "upload_form": GalleryImageForm(),
             "photos": get_gallery_photos(),
+        },
+    )
+
+
+@require_memorial_admin
+@require_http_methods(["GET", "POST"])
+def dashboard_gallery_edit(request, pk):
+    photo = get_object_or_404(GalleryImage, pk=pk)
+    if request.method == "POST":
+        form = GalleryImageEditForm(request.POST, request.FILES, instance=photo)
+        if form.is_valid():
+            updated = form.save(commit=False)
+            if not form.cleaned_data.get("image"):
+                updated.image = photo.image
+            updated.save()
+            messages.success(request, "Photo updated.")
+            return redirect("memorial:dashboard_gallery")
+    else:
+        form = GalleryImageEditForm(instance=photo)
+
+    return render(
+        request,
+        "memorial/dashboard/gallery_edit.html",
+        {
+            "page_title": "Edit photo",
+            "photo": photo,
+            "edit_form": form,
         },
     )
 

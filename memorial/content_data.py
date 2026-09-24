@@ -2,24 +2,26 @@ import re
 
 from django.conf import settings
 
-from .maps import google_maps_directions_url
-from .models import EulogyContent, GalleryImage, HomePageContent, LifeChapter, Tribute, VisitLocation
+from .maps import google_maps_directions_url, google_maps_place_url
+from .models import GalleryImage, HomePageContent, LifeChapter, Tribute, VisitLocation
 
 DEFAULT_HOME_PAGE = {
     "intro_lead": (
-        "Beloved patriarch, farmer, elder, and keeper of stories. This memorial gathers his eulogy, "
-        "the funeral programme, and the words of those who loved him."
+        "Beloved patriarch, farmer, elder, and keeper of stories. This memorial gathers the "
+        "funeral programme, life story, and words of those who loved him."
     ),
     "portrait_caption": "He walked gently, but left deep footprints.",
     "programme_title": "Funeral programme",
     "programme_lead": (
-        "Order of events for the homegoing service at PCEA Mbogori church, Mbogori Marigwe."
+        "Burial and homegoing service — Thursday, 25 September 2026 at "
+        "PCEA Mbogori Church, Chogoria (Mbogori Marigwe)."
     ),
-    "programme_timeline": """7:00 AM : Departure from home – Mbogori
+    "programme_timeline": """Thursday, 25 September 2026 : Burial day
+7:00 AM : Departure from home – Mbogori
 8:00 AM : Arrival at mortuary — viewing of the body
 9:00 AM : Departure from Chogoria
-10:00 AM : Arrival at PCEA Mbogori church
-10:30 AM : Funeral service""",
+10:00 AM : Arrival at PCEA Mbogori Church, Chogoria
+10:30 AM : Funeral service and burial""",
     "programme_service": """Hymn song
 Opening prayer
 Welcome remarks by chairman
@@ -174,36 +176,6 @@ LIFE_STORY_CHAPTER_META = [
     {"icon_id": "legacy", "short_label": "Legacy", "symbol": "🕊"},
 ]
 
-DEFAULT_EULOGY = {
-    "hero_lead": (
-        "Spoken in gratitude, faith, and remembrance — for a man who lived "
-        "ninety-six years with dignity."
-    ),
-    "body": (
-        "We gather today not only to mourn, but to give thanks. Fredrick Guantai Mugira was born in an era\n"
-        "when Kenya was still finding its voice, and he spent nearly a century helping his family and community\n"
-        "find theirs. He was a son of the soil — hands calloused from honest work, heart softened by prayer,\n"
-        "and eyes always searching the horizon for the next generation.\n\n"
-        "Mzee Fredrick knew the language of the land: when to plant, when to wait, when to harvest. He carried\n"
-        "that same patience into fatherhood. He did not shout to be heard; he led by showing up — at dawn in\n"
-        "the shamba, at dusk around the fire, on Sundays with hymnbook worn thin at the spine. His laughter\n"
-        "was quiet but contagious; his counsel, brief but lasting.\n\n"
-        "Ninety-six years is not a number — it is a library. In those years he saw empires change and borders\n"
-        "redrawn, yet he held fast to what mattered: integrity, hospitality, and the name you leave your children.\n"
-        "He taught that a man's wealth is measured in the trust of his neighbors and the respect of his grandchildren.\n\n"
-        "To his wife and companion through decades of sun and rain — thank you for standing beside him.\n"
-        "To his children — thank you for honoring him in life and in legacy. To his grandchildren and great-grandchildren —\n"
-        "you are the continuation of his story. Carry his gentleness forward; let his memory be the compass when the path is unclear.\n\n"
-        "Fredrick Guantai Mugira has completed his journey on earth. We release him with love, knowing that\n"
-        "those who live in hearts we leave behind are never truly gone. Rest well, Mzee. Your footprints remain."
-    ),
-    "closing_prayer": (
-        "Eternal God, receive your servant Fredrick. Comfort all who grieve. Grant us peace, "
-        "and the courage to live as he lived — with faith, humility, and love. Amen."
-    ),
-}
-
-
 def ensure_visit_locations():
     """Create visit rows from settings so public pages match the admin location editor."""
     for key, data in settings.MEMORIAL_VISIT.items():
@@ -343,22 +315,68 @@ def get_approved_tributes():
     return Tribute.objects.filter(is_approved=True).order_by("-created_at")
 
 
+GALLERY_ROTATE_SESSION_KEY = "gallery_display_offset"
+GALLERY_PREVIEW_SESSION_KEY = "gallery_preview_offset"
+
+
+def normalize_gallery_orders():
+    """Renumber gallery rows 0…n so duplicate order values do not freeze sort by id."""
+    photos = list(GalleryImage.objects.order_by("order", "id"))
+    updates = []
+    for index, photo in enumerate(photos):
+        if photo.order != index:
+            photo.order = index
+            updates.append(photo)
+    if updates:
+        GalleryImage.objects.bulk_update(updates, ["order"])
+    return len(updates)
+
+
 def get_gallery_photos():
+    """Stable sort order (dashboard and maintenance)."""
     return GalleryImage.objects.order_by("order", "id")
 
 
-def get_eulogy_content():
-    row = EulogyContent.objects.first()
-    if row:
-        return row
-    return DEFAULT_EULOGY
+def _gallery_ordered_list():
+    return list(get_gallery_photos())
 
 
-def eulogy_body_paragraphs(content):
-    if hasattr(content, "body_paragraphs"):
-        return content.body_paragraphs()
-    body = content.get("body", "")
-    return [p.strip() for p in body.split("\n\n") if p.strip()]
+def _rotate_gallery_list(photos, offset):
+    if len(photos) < 2:
+        return photos
+    offset = offset % len(photos)
+    if offset == 0:
+        return photos
+    return photos[offset:] + photos[:offset]
+
+
+def get_gallery_photos_display(request):
+    """
+    Public gallery order: rotate on each visit so the same photos are not always first.
+    """
+    photos = _gallery_ordered_list()
+    if len(photos) < 2 or request is None:
+        return photos
+
+    offset = int(request.session.get(GALLERY_ROTATE_SESSION_KEY, 0))
+    request.session[GALLERY_ROTATE_SESSION_KEY] = (offset + 1) % len(photos)
+    request.session.modified = True
+    return _rotate_gallery_list(photos, offset)
+
+
+def get_gallery_preview(request, limit=4):
+    """Home page gallery strip — separate rotation from full gallery page."""
+    photos = _gallery_ordered_list()
+    if not photos:
+        return []
+    limit = min(limit, len(photos))
+    if len(photos) < 2 or request is None:
+        return photos[:limit]
+
+    offset = int(request.session.get(GALLERY_PREVIEW_SESSION_KEY, 0)) % len(photos)
+    request.session[GALLERY_PREVIEW_SESSION_KEY] = (offset + 1) % len(photos)
+    request.session.modified = True
+    return [photos[(offset + i) % len(photos)] for i in range(limit)]
 
 
 def get_visit_destinations():
@@ -375,7 +393,8 @@ def get_visit_destinations():
                     "place_name": loc.place_name,
                     "maps_query": loc.maps_query,
                     "key": loc.slug,
-                    "maps_url": google_maps_directions_url(loc.maps_query),
+                    "maps_url": google_maps_place_url(loc.maps_query),
+                    "directions_url": google_maps_directions_url(loc.maps_query),
                 }
             )
         return destinations
@@ -386,7 +405,8 @@ def get_visit_destinations():
             {
                 **data,
                 "key": key,
-                "maps_url": google_maps_directions_url(data["maps_query"]),
+                "maps_url": google_maps_place_url(data["maps_query"]),
+                "directions_url": google_maps_directions_url(data["maps_query"]),
             }
         )
     return destinations

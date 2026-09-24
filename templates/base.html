@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/main.css' %}?v=6">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}?v=7">
   <link rel="stylesheet" href="{% static 'css/pages.css' %}?v=3">
   {% block extra_head %}{% endblock %}
 </head>
@@ -50,7 +50,7 @@
            aria-label="Employee login — memorial content dashboard">
           <p class="header-eyebrow">In loving memory</p>
           <h1 class="header-name">{{ memorial.full_name }}</h1>
-          <p class="header-dates">{{ memorial.birth_year }} — {{ memorial.death_year }} · {{ memorial.birth_place }}</p>
+          <p class="header-dates">{{ memorial.birth_year }} — {{ memorial.death_year }} · Burial {{ memorial.burial_date_short }} · {{ memorial.burial_venue }}</p>
         </a>
 
         <div class="header-actions">

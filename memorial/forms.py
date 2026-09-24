@@ -2,7 +2,6 @@ from django import forms
 from django.forms import modelformset_factory
 
 from .models import (
-    EulogyContent,
     GalleryImage,
     HomePageContent,
     LifeChapter,
@@ -130,30 +129,27 @@ class MemorialQuoteForm(forms.ModelForm):
         }
 
 
-class EulogyContentForm(forms.ModelForm):
-    class Meta:
-        model = EulogyContent
-        fields = ("hero_lead", "body", "closing_prayer")
-        widgets = {
-            "hero_lead": forms.Textarea(attrs={"rows": 3}),
-            "body": forms.Textarea(
-                attrs={
-                    "rows": 16,
-                    "placeholder": "One paragraph per block, separated by a blank line.",
-                }
-            ),
-            "closing_prayer": forms.Textarea(attrs={"rows": 4}),
-        }
-
-
 class GalleryImageForm(forms.ModelForm):
     class Meta:
         model = GalleryImage
-        fields = ("image", "caption", "order")
+        fields = ("image", "caption")
         widgets = {
             "caption": forms.TextInput(attrs={"placeholder": "Optional caption"}),
-            "order": forms.NumberInput(attrs={"min": 0}),
         }
+
+
+class GalleryImageEditForm(forms.ModelForm):
+    class Meta:
+        model = GalleryImage
+        fields = ("caption", "image")
+        widgets = {
+            "caption": forms.TextInput(attrs={"placeholder": "Optional caption"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["image"].required = False
+        self.fields["image"].help_text = "Leave empty to keep the current photo."
 
 
 class VisitLocationForm(forms.ModelForm):

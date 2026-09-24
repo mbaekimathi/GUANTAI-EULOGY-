@@ -5,7 +5,7 @@ A modern, responsive memorial site with a consistent **header**, **sidebar**, an
 ## Features
 
 - Responsive layout for mobile, tablet, and desktop (collapsible sidebar on small screens)
-- Pages: Home, Eulogy, Life Story, Legacy, Family, Tributes (with form), Service
+- Pages: Home, Life Story, Legacy, Family, Tributes (with form), Service
 - Django models for timeline chapters, guest tributes, and quotes
 - Admin interface for content moderation
 

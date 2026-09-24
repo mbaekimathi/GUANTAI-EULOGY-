@@ -18,8 +18,6 @@ urlpatterns = [
 
     path("home/", RedirectView.as_view(pattern_name="memorial:home", permanent=False)),
 
-    path("eulogy/", views.eulogy, name="eulogy"),
-
     path("life-story/", views.life_story, name="life_story"),
 
     path("life/", RedirectView.as_view(pattern_name="memorial:life_story", permanent=False)),
@@ -50,8 +48,6 @@ urlpatterns = [
 
     path("dashboard/logout/", dashboard_views.dashboard_logout, name="dashboard_logout"),
 
-    path("dashboard/eulogy/", dashboard_views.dashboard_eulogy, name="dashboard_eulogy"),
-
     path(
         "dashboard/life-story/",
         dashboard_views.dashboard_life_story,
@@ -69,6 +65,12 @@ urlpatterns = [
     ),
 
     path("dashboard/gallery/", dashboard_views.dashboard_gallery, name="dashboard_gallery"),
+
+    path(
+        "dashboard/gallery/<int:pk>/edit/",
+        dashboard_views.dashboard_gallery_edit,
+        name="dashboard_gallery_edit",
+    ),
 
     path(
 

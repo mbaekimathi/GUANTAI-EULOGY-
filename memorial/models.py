@@ -75,7 +75,7 @@ class MemorialQuote(models.Model):
 
 
 class EulogyContent(models.Model):
-    """Editable eulogy text shown on the public eulogy page."""
+    """Legacy eulogy text (no longer shown on a public page)."""
 
     hero_lead = models.TextField()
     body = models.TextField(
@@ -106,6 +106,14 @@ class GalleryImage(models.Model):
 
     def __str__(self):
         return self.caption or f"Gallery image {self.pk}"
+
+    def save(self, *args, **kwargs):
+        if self.pk is None:
+            from django.db.models import Max
+
+            current_max = GalleryImage.objects.aggregate(m=Max("order"))["m"]
+            self.order = (current_max if current_max is not None else -1) + 1
+        super().save(*args, **kwargs)
 
 
 class VisitLocation(models.Model):

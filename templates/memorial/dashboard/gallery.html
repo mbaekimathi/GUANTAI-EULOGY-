@@ -3,7 +3,7 @@
 {% block admin_title %}Gallery{% endblock %}
 
 {% block admin_content %}
-<p class="admin-intro">Upload photos for the public gallery. Add a caption and sort order if you like.</p>
+<p class="admin-intro">Upload photos for the public gallery. New photos are appended automatically; the public page rotates which images appear first so the same photos are not always on top.</p>
 
 <section class="admin-card admin-card--form">
   <h3 class="admin-card__title">Upload</h3>
@@ -30,11 +30,14 @@
       <div class="admin-gallery-item__meta">
         {% if photo.caption %}<p class="admin-gallery-item__caption">{{ photo.caption }}</p>{% endif %}
         <p class="admin-card__meta">Order {{ photo.order }}</p>
-        <form method="post">
-          {% csrf_token %}
-          <input type="hidden" name="delete_id" value="{{ photo.pk }}">
-          <button type="submit" class="btn btn--ghost">Remove</button>
-        </form>
+        <div class="btn-row admin-gallery-item__actions">
+          <a class="btn btn--primary" href="{% url 'memorial:dashboard_gallery_edit' photo.pk %}">Edit</a>
+          <form method="post" class="admin-gallery-item__delete">
+            {% csrf_token %}
+            <input type="hidden" name="delete_id" value="{{ photo.pk }}">
+            <button type="submit" class="btn btn--ghost">Remove</button>
+          </form>
+        </div>
       </div>
     </li>
     {% endfor %}

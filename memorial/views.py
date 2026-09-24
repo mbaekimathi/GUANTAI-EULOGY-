@@ -11,13 +11,10 @@ from django.views.decorators.http import require_http_methods
 
 from .content_data import (
 
-    eulogy_body_paragraphs,
-
     get_approved_tributes,
 
-    get_eulogy_content,
-
-    get_gallery_photos,
+    get_gallery_photos_display,
+    get_gallery_preview,
 
     get_home_page_content,
 
@@ -62,7 +59,7 @@ def home(request):
 
     quote = MemorialQuote.objects.filter(is_active=True).first()
 
-    gallery_preview = get_gallery_photos()[:4]
+    gallery_preview = get_gallery_preview(request, limit=4)
 
     return render(
 
@@ -83,44 +80,6 @@ def home(request):
             "featured_quote": quote,
 
             "gallery_preview": gallery_preview,
-
-        },
-
-    )
-
-
-
-
-
-@never_cache
-
-def eulogy(request):
-
-    content = get_eulogy_content()
-
-    hero_lead = getattr(content, "hero_lead", None) or content.get("hero_lead", "")
-
-    closing_prayer = getattr(content, "closing_prayer", None) or content.get(
-
-        "closing_prayer", ""
-
-    )
-
-    return render(
-
-        request,
-
-        "memorial/eulogy.html",
-
-        {
-
-            "page_title": "Eulogy",
-
-            "eulogy_hero_lead": hero_lead,
-
-            "eulogy_paragraphs": eulogy_body_paragraphs(content),
-
-            "eulogy_closing_prayer": closing_prayer,
 
         },
 
@@ -286,7 +245,7 @@ def visit_go(request, place):
 
 def gallery(request):
 
-    photos = get_gallery_photos()
+    photos = get_gallery_photos_display(request)
 
     return render(
 
