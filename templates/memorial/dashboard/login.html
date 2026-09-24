@@ -1,0 +1,49 @@
+{% extends "memorial/dashboard/base.html" %}
+
+{% block admin_title %}Employee login{% endblock %}
+
+{% block admin_shell_header %}{% endblock %}
+
+{% block admin_content %}
+<div class="login-page">
+  <div class="login-card" role="region" aria-labelledby="login-heading">
+    <div class="login-card__header">
+      <div class="login-card__mark" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 3l7 4v5c0 4.2-2.9 8-7 9-4.1-1-7-4.8-7-9V7l7-4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M9.5 12.2 11 13.7l3.5-3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <p class="admin-page__eyebrow">Employee access</p>
+      <h2 id="login-heading" class="login-card__title">Sign in</h2>
+      <p class="login-card__lead">
+        Manage eulogy, life story, tributes, gallery, and locations.
+      </p>
+    </div>
+
+    <form method="post" class="login-form" novalidate>
+      {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+      {% for field in form %}
+      <div class="form-field login-field{% if field.errors %} form-field--error{% endif %}">
+        <label class="login-field__label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.name == "username" %}
+        <p class="form-field__hint">Use your assigned employee login number.</p>
+        {% endif %}
+        {% if field.errors %}
+        <p class="form-field__error" role="alert">{{ field.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      <button type="submit" class="btn btn--primary login-form__submit">Sign in</button>
+    </form>
+
+    <p class="login-card__footer">
+      <a class="login-card__back" href="{% url 'memorial:home' %}">← Back to memorial site</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "memorial/dashboard/base.html" %}
+
+{% block admin_title %}Home page{% endblock %}
+
+{% block admin_content %}
+<p class="admin-intro">
+  Update Fredrick’s portrait, welcome text, featured quote, and funeral programme on the public home page.
+  The gallery preview on the home page still comes from the Gallery section.
+</p>
+
+<form method="post" enctype="multipart/form-data" class="admin-form">
+  {% csrf_token %}
+
+  <section class="admin-card admin-card--form admin-section">
+    <h3 class="admin-section__title">Welcome &amp; portrait</h3>
+    {% if home_form.instance.portrait_image %}
+    <div class="admin-portrait-preview">
+      <p class="form-field__hint">Current portrait on the home page:</p>
+      <img
+        src="{{ home_form.instance.portrait_image.url }}"
+        alt="Current home page portrait"
+        class="admin-portrait-preview__img"
+        loading="lazy"
+      >
+    </div>
+    {% endif %}
+    {% for field in home_form %}
+      {% if field.name == "intro_lead" or field.name == "portrait_image" or field.name == "portrait_caption" %}
+      <div class="form-field">
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.help_text %}<p class="form-field__hint">{{ field.help_text }}</p>{% endif %}
+        {% if field.errors %}<p class="form-field__error">{{ field.errors|join:", " }}</p>{% endif %}
+      </div>
+      {% endif %}
+    {% endfor %}
+  </section>
+
+  <section class="admin-card admin-card--form admin-section">
+    <h3 class="admin-section__title">Featured quote</h3>
+    {% for field in quote_form %}
+    <div class="form-field{% if field.name == 'is_active' %} form-field--inline{% endif %}">
+      {% if field.name == "is_active" %}
+      <label for="{{ field.id_for_label }}">{{ field }} {{ field.label }}</label>
+      {% else %}
+      {{ field.label_tag }}
+      {{ field }}
+      {% endif %}
+      {% if field.help_text %}<p class="form-field__hint">{{ field.help_text }}</p>{% endif %}
+      {% if field.errors %}<p class="form-field__error">{{ field.errors|join:", " }}</p>{% endif %}
+    </div>
+    {% endfor %}
+  </section>
+
+  <section class="admin-card admin-card--form admin-section">
+    <h3 class="admin-section__title">Programme update</h3>
+    {% for field in home_form %}
+      {% if field.name != "intro_lead" and field.name != "portrait_image" and field.name != "portrait_caption" %}
+      <div class="form-field">
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.help_text %}<p class="form-field__hint">{{ field.help_text }}</p>{% endif %}
+        {% if field.errors %}<p class="form-field__error">{{ field.errors|join:", " }}</p>{% endif %}
+      </div>
+      {% endif %}
+    {% endfor %}
+  </section>
+
+  <div class="admin-toolbar">
+    <div class="admin-toolbar__primary">
+      <a class="btn btn--ghost" href="{% url 'memorial:home' %}" target="_blank" rel="noopener">Preview home</a>
+      <button type="submit" class="btn btn--primary">Save</button>
+    </div>
+  </div>
+</form>
+{% endblock %}

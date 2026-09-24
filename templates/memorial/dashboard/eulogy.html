@@ -1,0 +1,27 @@
+{% extends "memorial/dashboard/base.html" %}
+
+{% block admin_title %}Eulogy{% endblock %}
+
+{% block admin_content %}
+<p class="admin-intro">Edit the public eulogy. Separate body paragraphs with a blank line.</p>
+
+<form method="post" class="admin-form">
+  {% csrf_token %}
+  <section class="admin-card admin-card--form">
+    {% for field in form %}
+    <div class="form-field">
+      {{ field.label_tag }}
+      {{ field }}
+      {% if field.help_text %}<p class="form-field__hint">{{ field.help_text }}</p>{% endif %}
+      {% if field.errors %}<p class="form-field__error">{{ field.errors|join:", " }}</p>{% endif %}
+    </div>
+    {% endfor %}
+  </section>
+  <div class="admin-toolbar">
+    <div class="admin-toolbar__primary">
+      <a class="btn btn--ghost" href="{% url 'memorial:eulogy' %}" target="_blank" rel="noopener">Preview</a>
+      <button type="submit" class="btn btn--primary">Save</button>
+    </div>
+  </div>
+</form>
+{% endblock %}

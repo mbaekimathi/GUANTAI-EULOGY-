@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-content">
+<header class="page-hero">
+  <h2 class="page-hero__title">Visit</h2>
+  <p class="page-hero__lead">
+    Choose where you are headed. You will be taken to Google Maps to start navigation
+    to the church or the family home.
+  </p>
+</header>
+
+<div class="visit-grid">
+  {% for dest in visit_destinations %}
+  <article class="visit-card">
+    <p class="card__label">{{ dest.subtitle }}</p>
+    <h3 class="visit-card__title">{{ dest.title }}</h3>
+    <p class="visit-card__place">{{ dest.place_name }}</p>
+    <div class="btn-row visit-card__actions">
+      <a class="btn btn--primary"
+         href="{% url 'memorial:visit_go' dest.slug|default:dest.key %}"
+         target="_blank"
+         rel="noopener noreferrer">
+        Open in Google Maps
+      </a>
+      <a class="btn btn--ghost"
+         href="{{ dest.maps_url }}"
+         target="_blank"
+         rel="noopener noreferrer">
+        Preview location
+      </a>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+
+<p class="prose visit-note">
+  Locations shown here are updated by the family from the admin dashboard. Google Maps will use your current location as the starting point on mobile.
+</p>
+</div>
+{% endblock %}

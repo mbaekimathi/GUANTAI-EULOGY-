@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/tributes.css' %}?v=6">
+{% endblock %}
+
+{% block content %}
+<div class="page-content">
+<header class="tributes-hero">
+  <div class="tributes-hero__glow" aria-hidden="true"></div>
+  <p class="tributes-hero__eyebrow">Words from the heart</p>
+  <h2 class="tributes-hero__title">Tributes &amp; memories</h2>
+  <p class="tributes-hero__lead">
+    Messages of love, gratitude, and remembrance for {{ memorial.full_name }} — from family and
+    all who were touched by his life.
+  </p>
+  {% if tribute_items %}
+  <p class="tributes-hero__count">
+    <span class="tributes-hero__count-num">{{ tribute_items|length }}</span>
+    voices gathered here
+  </p>
+  {% endif %}
+</header>
+
+<div class="tributes-page" data-tributes-page>
+  <div class="tributes-page__ambient" aria-hidden="true">
+    <span class="tributes-page__orb tributes-page__orb--1"></span>
+    <span class="tributes-page__orb tributes-page__orb--2"></span>
+  </div>
+
+  <div class="tributes-page__layout">
+    <section class="tributes-wall" aria-label="Family tributes">
+      {% if tribute_items %}
+      <div class="tributes-filters" role="toolbar" aria-label="Filter tributes">
+        <button type="button" class="tributes-filter is-active" data-tribute-filter="all">All</button>
+        {% for item in tribute_items %}
+        {% ifchanged item.filter_key %}
+        <button
+          type="button"
+          class="tributes-filter tributes-filter--{{ item.meta.accent }}"
+          data-tribute-filter="{{ item.filter_key }}"
+        >
+          {{ item.meta.label }}
+        </button>
+        {% endifchanged %}
+        {% endfor %}
+      </div>
+
+      <ul class="tribute-list tribute-list--wall">
+        {% for item in tribute_items %}
+        <li
+          class="tribute-card tribute-card--{{ item.meta.accent }}"
+          data-tribute-card
+          data-tribute-group="{{ item.filter_key }}"
+        >
+          <div class="tribute-card__accent" aria-hidden="true"></div>
+          <span class="tribute-card__mark" aria-hidden="true">“</span>
+          <div class="tribute-card__top">
+            <span class="tribute-card__symbol" aria-hidden="true">{{ item.meta.symbol }}</span>
+            <div class="tribute-card__identity">
+              <p class="tribute-card__author">{{ item.tribute.author_name }}</p>
+              <p class="tribute-card__date">{{ item.tribute.created_at|date:"F j, Y" }}</p>
+            </div>
+            {% if item.tribute.relationship %}
+            <span class="tribute-card__badge">{{ item.tribute.relationship }}</span>
+            {% endif %}
+          </div>
+          <p class="tribute-card__excerpt">{{ item.excerpt }}</p>
+          <div class="tribute-card__body">{{ item.tribute.message|linebreaks }}</div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="tributes-empty">
+        <p class="tributes-empty__title">Tributes will appear here</p>
+        <p class="tributes-empty__text">Messages shared by family and friends will be shown when they are published.</p>
+      </div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/tributes.js' %}" defer></script>
+{% endblock %}

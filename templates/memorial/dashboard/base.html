@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="admin-page">
+  {% block admin_shell_header %}
+  <header class="admin-page__head">
+    <p class="admin-page__eyebrow">Memorial admin</p>
+    <h2 class="admin-page__title">{% block admin_title %}{{ page_title }}{% endblock %}</h2>
+  </header>
+  {% endblock %}
+
+  <div class="admin-page__body">
+    {% block admin_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

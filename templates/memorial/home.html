@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}In Loving Memory{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/home.css' %}?v=8">
+{% endblock %}
+
+{% block content %}
+<div class="page-content home-page" data-home-page>
+  <div class="home-page__mesh" aria-hidden="true"></div>
+  <div class="home-page__ambient" aria-hidden="true">
+    <span class="home-page__orb home-page__orb--1"></span>
+    <span class="home-page__orb home-page__orb--2"></span>
+    <span class="home-page__orb home-page__orb--3"></span>
+    <span class="home-page__orb home-page__orb--4"></span>
+  </div>
+  <div class="home-page__particles" aria-hidden="true">
+    <span class="home-spark"></span>
+    <span class="home-spark"></span>
+    <span class="home-spark"></span>
+    <span class="home-spark"></span>
+    <span class="home-spark"></span>
+    <span class="home-spark"></span>
+    <span class="home-spark"></span>
+    <span class="home-spark"></span>
+  </div>
+
+  <section class="home-hero" data-reveal>
+    <div class="home-hero__portrait-wrap">
+      <div class="home-hero__portrait-ring" aria-hidden="true"></div>
+      <div class="home-hero__portrait{% if home_content.portrait_image %} home-hero__portrait--photo{% endif %}">
+        {% if home_content.portrait_image %}
+        <img
+          class="home-hero__portrait-photo"
+          src="{{ home_content.portrait_image.url }}"
+          alt="Portrait of {{ memorial.full_name }}"
+          width="400"
+          height="500"
+          loading="eager"
+          decoding="async"
+        >
+        {% else %}
+        <span class="home-hero__portrait-placeholder" role="img" aria-label="Portrait placeholder for {{ memorial.full_name }}"></span>
+        {% endif %}
+        <span class="home-hero__portrait-shine" aria-hidden="true"></span>
+        <p class="home-hero__portrait-caption">“{{ home_content.portrait_caption }}”</p>
+      </div>
+    </div>
+    <div class="home-hero__intro">
+      <span class="home-hero__badge" aria-hidden="true">✦ 96 years of life</span>
+      <p class="header-eyebrow">Celebrating 96 years</p>
+      <h2>{{ memorial.full_name }}</h2>
+      <p class="lead">{{ home_content.intro_lead }}</p>
+      <div class="home-hero__actions">
+        <div class="btn-row">
+          <a class="btn btn--primary" href="{% url 'memorial:eulogy' %}">Read the eulogy</a>
+          <a class="btn btn--ghost" href="{% url 'memorial:tributes' %}">View tributes</a>
+          <a class="btn btn--ghost" href="{% url 'memorial:visit' %}">Visit</a>
+        </div>
+        <a class="home-hero__scroll" href="#home-programme">
+          View funeral programme
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 5v14M12 19l-5-5M12 19l5-5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <nav class="home-quick-nav" data-home-quick-nav aria-label="On this page">
+    <a class="home-quick-nav__link is-active" data-home-section-link href="#home-programme">Programme</a>
+    {% if featured_quote %}<a class="home-quick-nav__link" data-home-section-link href="#home-quote">Quote</a>{% endif %}
+    {% if gallery_preview %}<a class="home-quick-nav__link" data-home-section-link href="#home-gallery">Gallery</a>{% endif %}
+  </nav>
+
+  <section
+    id="home-programme"
+    class="content-section programme"
+    aria-labelledby="programme-heading"
+    data-home-programme
+    data-reveal
+  >
+    <div class="programme__stage">
+      <div class="programme__stage-border" aria-hidden="true"></div>
+      <div class="programme__stage-glow" aria-hidden="true"></div>
+      <div class="programme__stage-inner">
+        <div class="programme__header">
+          <header class="page-hero">
+            <h2 class="page-hero__title" id="programme-heading">{{ home_content.programme_title }}</h2>
+            {% if home_content.programme_lead %}
+            <p class="page-hero__lead">{{ home_content.programme_lead }}</p>
+            {% endif %}
+          </header>
+        </div>
+
+        <div class="programme__tabs" role="tablist" aria-label="Programme sections">
+          <button type="button" class="programme__tab" role="tab" aria-selected="true" data-programme-tab="schedule">
+            Schedule
+          </button>
+          <button type="button" class="programme__tab" role="tab" aria-selected="false" data-programme-tab="service">
+            Order of service
+          </button>
+        </div>
+
+        <div class="programme__grid programme__grid--tabs">
+          {% if programme_timeline %}
+          <section
+            class="programme__block card programme__panel programme__block--schedule"
+            data-programme-panel="schedule"
+            aria-label="Schedule"
+          >
+            <span class="programme__block-icon" aria-hidden="true">🕊</span>
+            <p class="card__label">Schedule</p>
+            <p class="schedule-tree__intro" id="programme-schedule-hint">
+              Follow the path step by step — each branch marks a moment on the journey.
+            </p>
+
+            <div class="schedule-tree" data-programme-timeline data-journey-tree aria-describedby="programme-schedule-hint">
+              <nav class="schedule-tree__stepper" aria-label="Jump to a schedule step">
+                {% for item in programme_timeline %}
+                <button
+                  type="button"
+                  class="schedule-tree__stepper-btn"
+                  data-stepper-index="{{ forloop.counter0 }}"
+                  aria-label="Step {{ forloop.counter }}{% if item.time %}, {{ item.time }}{% endif %}"
+                  aria-current="false"
+                >
+                  <span class="schedule-tree__stepper-num">{{ forloop.counter }}</span>
+                </button>
+                {% if not forloop.last %}
+                <span class="schedule-tree__stepper-join" aria-hidden="true"></span>
+                {% endif %}
+                {% endfor %}
+              </nav>
+
+              <div class="schedule-tree__trunk" aria-hidden="true">
+                <span class="schedule-tree__trunk-fill" data-timeline-rail-fill></span>
+                <span class="schedule-tree__trunk-glow" data-timeline-rail-glow></span>
+              </div>
+
+              <ol class="schedule-tree__list schedule-tree__list--scroll">
+                {% for item in programme_timeline %}
+                <li
+                  class="schedule-tree__node schedule-tree__node--{% cycle 'left' 'right' %}{% if forloop.last %} schedule-tree__node--finale{% endif %}"
+                  data-timeline-step="{{ forloop.counter0 }}"
+                >
+                  <div class="schedule-tree__trunk-node" aria-hidden="true">
+                    <span class="schedule-tree__node-ring">
+                      {% if forloop.last %}
+                      <span class="schedule-tree__node-icon">✦</span>
+                      {% else %}
+                      <span class="schedule-tree__node-num">{{ forloop.counter }}</span>
+                      {% endif %}
+                    </span>
+                  </div>
+                  <span class="schedule-tree__branch" aria-hidden="true"></span>
+                  <button
+                    type="button"
+                    class="schedule-tree__card"
+                    aria-pressed="false"
+                  >
+                    <span class="schedule-tree__card-step">Step {{ forloop.counter }} of {{ programme_timeline|length }}</span>
+                    {% if item.time %}
+                    <span class="schedule-tree__time">{{ item.time }}</span>
+                    {% endif %}
+                    <span class="schedule-tree__event">{{ item.label }}</span>
+                  </button>
+                </li>
+                {% endfor %}
+              </ol>
+            </div>
+          </section>
+          {% endif %}
+
+          {% if programme_service %}
+          <section
+            class="programme__block card programme__panel programme__block--service"
+            data-programme-panel="service"
+            aria-label="Order of service"
+            {% if programme_timeline %}hidden{% endif %}
+          >
+            <span class="programme__block-icon" aria-hidden="true">📖</span>
+            <p class="card__label">Order of service</p>
+            <p class="schedule-tree__intro" id="programme-service-hint">
+              A step-by-step outline of the service — follow each part in order.
+            </p>
+
+            <div
+              class="schedule-tree service-tree"
+              data-programme-service
+              data-journey-tree
+              aria-describedby="programme-service-hint"
+            >
+              <nav class="schedule-tree__stepper service-tree__stepper" aria-label="Jump to a part of the service">
+                {% for item in programme_service %}
+                <button
+                  type="button"
+                  class="schedule-tree__stepper-btn"
+                  data-stepper-index="{{ forloop.counter0 }}"
+                  aria-label="Part {{ forloop.counter }}: {{ item|truncatechars:48 }}"
+                  aria-current="false"
+                >
+                  <span class="schedule-tree__stepper-num">{{ forloop.counter }}</span>
+                </button>
+                {% if not forloop.last %}
+                <span class="schedule-tree__stepper-join" aria-hidden="true"></span>
+                {% endif %}
+                {% endfor %}
+              </nav>
+
+              <div class="schedule-tree__trunk" aria-hidden="true">
+                <span class="schedule-tree__trunk-fill" data-timeline-rail-fill></span>
+                <span class="schedule-tree__trunk-glow" data-timeline-rail-glow></span>
+              </div>
+
+              <ol class="schedule-tree__list service-tree__list schedule-tree__list--scroll">
+                {% for item in programme_service %}
+                <li
+                  class="schedule-tree__node schedule-tree__node--{% cycle 'left' 'right' %}{% if forloop.last %} schedule-tree__node--finale{% endif %}"
+                  data-timeline-step="{{ forloop.counter0 }}"
+                >
+                  <div class="schedule-tree__trunk-node" aria-hidden="true">
+                    <span class="schedule-tree__node-ring">
+                      {% if forloop.last %}
+                      <span class="schedule-tree__node-icon" aria-hidden="true">🕯</span>
+                      {% else %}
+                      <span class="schedule-tree__node-num">{{ forloop.counter }}</span>
+                      {% endif %}
+                    </span>
+                  </div>
+                  <span class="schedule-tree__branch" aria-hidden="true"></span>
+                  <button type="button" class="schedule-tree__card service-tree__card" aria-pressed="false">
+                    <span class="schedule-tree__card-step">Part {{ forloop.counter }} of {{ programme_service|length }}</span>
+                    <span class="schedule-tree__event">{{ item }}</span>
+                  </button>
+                </li>
+                {% endfor %}
+              </ol>
+            </div>
+          </section>
+          {% endif %}
+        </div>
+
+        {% if home_content.programme_closing %}
+        <p class="programme__closing">{{ home_content.programme_closing }}</p>
+        {% endif %}
+
+        <div class="programme__actions btn-row btn-row--tight">
+          <a class="btn btn--primary" href="{% url 'memorial:visit' %}">Get directions</a>
+          <a class="btn btn--ghost" href="{% url 'memorial:service' %}">Service details</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {% if featured_quote %}
+  <section id="home-quote" class="card quote-card home-quote content-section" aria-label="Featured quote" data-reveal>
+    <p class="card__label">Words to remember</p>
+    <blockquote class="quote-card__text">
+      “{{ featured_quote.text }}”
+      {% if featured_quote.attribution %}
+      <footer class="quote-card__attr">— {{ featured_quote.attribution }}</footer>
+      {% endif %}
+    </blockquote>
+  </section>
+  {% endif %}
+
+  {% if gallery_preview %}
+  <section id="home-gallery" class="content-section content-section--spaced home-gallery" data-reveal>
+    <header class="page-hero">
+      <h2 class="page-hero__title">Gallery</h2>
+      <p class="page-hero__lead">Moments from a life well lived.</p>
+    </header>
+    <div class="gallery-grid gallery-grid--compact" data-reveal-stagger>
+      {% for photo in gallery_preview %}
+      <figure class="gallery-item">
+        <img src="{{ photo.image.url }}" alt="{{ photo.caption|default:'Memorial photograph' }}" loading="lazy">
+      </figure>
+      {% endfor %}
+    </div>
+    <div class="home-section-link btn-row btn-row--tight">
+      <a class="btn btn--ghost" href="{% url 'memorial:gallery' %}">View full gallery</a>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/home.js' %}?v=6"></script>
+{% endblock %}

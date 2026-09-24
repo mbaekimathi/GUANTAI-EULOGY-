@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/life-story.css' %}?v=5">
+{% endblock %}
+
+{% block title %}Life Story{% endblock %}
+
+{% block content %}
+<div class="page-content life-story-page" data-life-story-page>
+  <div class="life-story-page__progress" aria-hidden="true">
+    <span class="life-story-page__progress-fill" data-life-page-progress></span>
+  </div>
+
+  <header class="life-hero" data-life-reveal>
+    <div class="life-hero__glow" aria-hidden="true"></div>
+    <p class="life-hero__eyebrow">A living timeline</p>
+    <h2 class="life-hero__title">The life of {{ memorial.full_name }}</h2>
+    <p class="life-hero__lead">
+      From Kiamwere village in Meru to Mbogori Marigwe — faith, family, and service woven across
+      <strong>{{ memorial_years }} luminous years</strong>.
+    </p>
+    <div class="life-hero__meta">
+      <span class="life-hero__chip">{{ memorial.birth_year }} — {{ memorial.death_year }}</span>
+      <span class="life-hero__chip life-hero__chip--accent">{{ memorial.birth_place }}</span>
+    </div>
+  </header>
+
+<div class="life-story" data-life-story>
+  <div class="life-story__ambient" aria-hidden="true">
+    <span class="life-story__orb life-story__orb--1"></span>
+    <span class="life-story__orb life-story__orb--2"></span>
+    <span class="life-story__orb life-story__orb--3"></span>
+  </div>
+
+  <div class="life-story__stats" aria-label="Life at a glance" data-life-reveal-stagger>
+    <div class="life-story__stat life-story__stat--born">
+      <span class="life-story__stat-icon" aria-hidden="true">★</span>
+      <span class="life-story__stat-value">{{ memorial.birth_year }}</span>
+      <span class="life-story__stat-label">Born</span>
+    </div>
+    <div class="life-story__stat life-story__stat--years">
+      <span class="life-story__stat-icon" aria-hidden="true">∞</span>
+      <span class="life-story__stat-value">{{ memorial_years }}</span>
+      <span class="life-story__stat-label">Years of grace</span>
+    </div>
+    <div class="life-story__stat life-story__stat--meru">
+      <span class="life-story__stat-icon" aria-hidden="true">⛰</span>
+      <span class="life-story__stat-value">Meru</span>
+      <span class="life-story__stat-label">Highlands home</span>
+    </div>
+    <div class="life-story__stat life-story__stat--church">
+      <span class="life-story__stat-icon" aria-hidden="true">✦</span>
+      <span class="life-story__stat-value">PCEA</span>
+      <span class="life-story__stat-label">Mbogori church</span>
+    </div>
+  </div>
+
+  <div class="life-story__progress" aria-hidden="true">
+    <span class="life-story__progress-fill" data-life-story-progress></span>
+  </div>
+
+  <div class="life-story__layout">
+    <nav class="life-story__nav" aria-label="Jump to chapter">
+      <p class="life-story__nav-heading">Walk the chapters</p>
+      <ol class="life-story__nav-list">
+        {% for item in story_items %}
+        <li>
+          <a
+            class="life-story__nav-link life-story__nav-link--{{ item.meta.icon_id }}"
+            href="#chapter-{{ item.chapter.pk }}"
+            data-chapter-nav
+            data-chapter-target="chapter-{{ item.chapter.pk }}"
+            data-chapter-accent="{{ item.meta.icon_id }}"
+          >
+            <span class="life-story__nav-dot" aria-hidden="true"></span>
+            <span class="life-story__nav-text">
+              <span class="life-story__nav-year">{{ item.chapter.year }}</span>
+              <span class="life-story__nav-title">{{ item.meta.short_label }}</span>
+            </span>
+          </a>
+        </li>
+        {% empty %}
+        <li><p class="life-story__nav-empty">No chapters yet.</p></li>
+        {% endfor %}
+      </ol>
+    </nav>
+
+    <div class="timeline timeline--story">
+      {% for item in story_items %}
+      <article
+        class="timeline__item timeline__item--{{ item.meta.icon_id }}{% if item.is_finale %} timeline__item--finale{% endif %}"
+        id="chapter-{{ item.chapter.pk }}"
+        data-chapter-item
+        data-chapter-accent="{{ item.meta.icon_id }}"
+        tabindex="-1"
+      >
+        <div class="timeline__card">
+          <span class="timeline__watermark" aria-hidden="true">{{ item.chapter.year }}</span>
+          <div class="timeline__card-accent" aria-hidden="true"></div>
+
+          <div class="timeline__card-head">
+            <span class="timeline__badge" aria-hidden="true">{{ item.meta.symbol }}</span>
+            <div class="timeline__head-text">
+              <p class="timeline__year">{{ item.chapter.year }}</p>
+              <h3 class="timeline__title">{{ item.chapter.title }}</h3>
+            </div>
+          </div>
+
+          <div class="timeline__body timeline__body--stack">
+            {% for paragraph in item.paragraphs %}
+            <p class="life-story__paragraph" data-life-paragraph>{{ paragraph|linebreaksbr }}</p>
+            {% endfor %}
+          </div>
+
+          {% if item.tags %}
+          <div class="life-story__tags" aria-label="{{ item.tags.label }}">
+            <p class="life-story__tags-label">{{ item.tags.label }}</p>
+            <ul class="life-story__tag-list">
+              {% for name in item.tags.names %}
+              <li><span class="life-story__tag">{{ name }}</span></li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          {% if item.callout %}
+          <blockquote class="life-story__callout">
+            <p class="life-story__callout-word">“{{ item.callout.word }}”</p>
+            <p class="life-story__callout-note">{{ item.callout.note }}</p>
+            <p class="life-story__callout-meru">{{ item.callout.meru }}</p>
+          </blockquote>
+          {% endif %}
+
+          {% if item.is_finale %}
+          <p class="life-story__rest">Dad, rest in peace.</p>
+          {% endif %}
+        </div>
+      </article>
+      {% empty %}
+      <p class="timeline__body">No chapters yet. Seed the database or update content from the admin dashboard.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <nav class="life-story__actions btn-row" aria-label="Continue exploring">
+    <a class="btn btn--primary" href="{% url 'memorial:eulogy' %}">Read the eulogy</a>
+    <a class="btn btn--ghost" href="{% url 'memorial:gallery' %}">View gallery</a>
+  </nav>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/life-story.js' %}?v=2" defer></script>
+{% endblock %}

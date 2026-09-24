@@ -1,0 +1,149 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Memorial tribute to {{ memorial.full_name }} — {{ memorial.tagline }}">
+  <meta name="theme-color" content="#090c0b" id="meta-theme-color">
+  <script>
+    (function () {
+      var key = "memorial-theme";
+      var theme = "dark";
+      try {
+        var stored = localStorage.getItem(key);
+        if (stored === "light" || stored === "dark") {
+          theme = stored;
+        }
+      } catch (e) {}
+      document.documentElement.setAttribute("data-theme", theme);
+      var meta = document.getElementById("meta-theme-color");
+      if (meta) {
+        meta.setAttribute("content", theme === "light" ? "#e8edeb" : "#090c0b");
+      }
+    })();
+  </script>
+  <title>{% block title %}{{ page_title|default:"Memorial" }}{% endblock %} · {{ memorial.full_name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}?v=6">
+  <link rel="stylesheet" href="{% static 'css/pages.css' %}?v=3">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="site-body{% if is_admin_dashboard %} site-body--admin{% endif %}">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <div class="site-shell{% if is_admin_dashboard %} site-shell--admin{% endif %}" data-sidebar-open="false">
+    <header class="site-header" role="banner">
+      <div class="header-inner">
+        <button type="button" class="sidebar-toggle" aria-expanded="false" aria-controls="site-sidebar">
+          <span class="sidebar-toggle__bar" aria-hidden="true"></span>
+          <span class="sidebar-toggle__bar" aria-hidden="true"></span>
+          <span class="sidebar-toggle__bar" aria-hidden="true"></span>
+          <span class="visually-hidden">Open navigation</span>
+        </button>
+
+        <a class="header-brand header-brand--employee"
+           href="{% if request.session.memorial_admin_authenticated %}{% url 'memorial:dashboard_home' %}{% else %}{% url 'memorial:dashboard_login' %}{% endif %}"
+           title="Employee login"
+           aria-label="Employee login — memorial content dashboard">
+          <p class="header-eyebrow">In loving memory</p>
+          <h1 class="header-name">{{ memorial.full_name }}</h1>
+          <p class="header-dates">{{ memorial.birth_year }} — {{ memorial.death_year }} · {{ memorial.birth_place }}</p>
+        </a>
+
+        <div class="header-actions">
+          {% if is_admin_dashboard and request.session.memorial_admin_authenticated %}
+          <form class="header-sign-out" method="post" action="{% url 'memorial:dashboard_logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn--ghost btn--header">Sign out</button>
+          </form>
+          {% endif %}
+          <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false">
+            <span class="theme-toggle__icon theme-toggle__icon--light" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.75"/>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="theme-toggle__icon theme-toggle__icon--dark" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span class="visually-hidden theme-toggle__label">Switch to light mode</span>
+          </button>
+          <div class="header-badge" aria-hidden="true">
+            <span class="header-badge__years">96</span>
+            <span class="header-badge__label">Years<br>of life</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="site-layout">
+      <aside id="site-sidebar" class="site-sidebar" aria-label="{% if is_admin_dashboard %}Admin dashboard navigation{% else %}Memorial navigation{% endif %}">
+        <nav class="sidebar-nav">
+          <p class="sidebar-nav__heading">{% if is_admin_dashboard %}Content updates{% else %}Sections{% endif %}</p>
+          <ul class="sidebar-nav__list">
+            {% for item in nav_items %}
+            <li>
+              <a href="{{ item.href }}"
+                 class="sidebar-nav__link{% if nav_active == item.url_name %} is-active{% endif %}"
+                 data-nav="{{ item.slug }}">
+                <span class="sidebar-nav__icon" aria-hidden="true"></span>
+                <span>{{ item.label }}</span>
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </nav>
+        <div class="sidebar-note">
+          {% if is_admin_dashboard %}
+          <p><a href="{% url 'memorial:home' %}">View public memorial site</a></p>
+          {% else %}
+          <p>“To live in hearts we leave behind is not to die.”</p>
+          {% endif %}
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" hidden aria-hidden="true"></div>
+
+      <main id="main-content" class="site-main" tabindex="-1">
+        <div class="site-main__inner">
+          {% if messages %}
+          <div class="flash-messages" role="status">
+            {% for message in messages %}
+            <p class="flash flash--{{ message.tags }}">{{ message }}</p>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {% block content %}{% endblock %}
+        </div>
+      </main>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <p class="footer-name">{{ memorial.full_name }}</p>
+          <p class="footer-tagline">{{ memorial.tagline }}</p>
+        </div>
+        <nav class="footer-nav" aria-label="Footer">
+          {% for item in nav_items %}
+          <a href="{{ item.href }}">{{ item.label }}</a>
+          {% endfor %}
+        </nav>
+        <p class="footer-copy">
+          © {% now "Y" %} The Mugira–Guantai family. Built with care for remembrance.
+        </p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="{% static 'js/main.js' %}?v=2" defer></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-content">
+<header class="page-hero">
+  <h2 class="page-hero__title">Family & gratitude</h2>
+  <p class="page-hero__lead">With deep appreciation from the Mugira–Guantai family and all who called him Mzee.</p>
+</header>
+
+<div class="family-tree">
+  <div class="family-tree__branch">
+    <h3>Spouse & companion</h3>
+    <ul>
+      <li>With enduring love — his wife and partner through decades of shared life (name as provided by the family).</li>
+    </ul>
+  </div>
+  <div class="family-tree__branch">
+    <h3>Children</h3>
+    <ul>
+      <li>Sons and daughters who honored him in care and in celebration.</li>
+      <li>Extended family across Kenya and the diaspora — united in remembrance.</li>
+    </ul>
+  </div>
+  <div class="family-tree__branch">
+    <h3>Grandchildren & beyond</h3>
+    <ul>
+      <li>Grandchildren and great-grandchildren — bearers of his name and his stories.</li>
+    </ul>
+  </div>
+</div>
+
+<article class="prose prose-spaced--tight page-content">
+  <p>
+    The family wishes to thank clergy, neighbors, friends, and medical caregivers who walked alongside
+    {{ memorial.full_name }} in his later years. Your kindness eased his path and strengthens ours today.
+  </p>
+  <p>
+    For corrections to names or family details on this site, please contact the family representative
+    listed on the <a href="{% url 'memorial:service' %}" class="text-link-gold">Service</a> page.
+  </p>
+</article>
+</div>
+{% endblock %}

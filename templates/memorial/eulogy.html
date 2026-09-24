@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Eulogy{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/eulogy.css' %}?v=1">
+{% endblock %}
+
+{% block content %}
+<div class="page-content eulogy-page" data-eulogy-page>
+  <div class="eulogy-page__progress" aria-hidden="true">
+    <span class="eulogy-page__progress-fill" data-eulogy-progress></span>
+  </div>
+
+  <header class="eulogy-hero" data-eulogy-reveal>
+    <div class="eulogy-hero__glow" aria-hidden="true"></div>
+    <p class="eulogy-hero__eyebrow">In remembrance</p>
+    <h2 class="eulogy-hero__title">Eulogy for {{ memorial.full_name }}</h2>
+    {% if eulogy_hero_lead %}
+    <p class="eulogy-hero__lead">{{ eulogy_hero_lead }}</p>
+    {% endif %}
+    <div class="eulogy-hero__meta">
+      <span class="eulogy-hero__chip">{{ memorial.birth_year }} — {{ memorial.death_year|default:"2025" }}</span>
+      <span class="eulogy-hero__chip eulogy-hero__chip--accent">Words of tribute</span>
+    </div>
+  </header>
+
+  <div class="eulogy-shell">
+    <div class="eulogy-shell__ambient" aria-hidden="true">
+      <span class="eulogy-shell__orb eulogy-shell__orb--1"></span>
+      <span class="eulogy-shell__orb eulogy-shell__orb--2"></span>
+      <span class="eulogy-shell__orb eulogy-shell__orb--3"></span>
+    </div>
+
+    <article class="eulogy-manuscript" aria-label="Eulogy text">
+      <div class="eulogy-manuscript__frame" aria-hidden="true"></div>
+      <div class="eulogy-manuscript__inner">
+        <p class="eulogy-manuscript__kicker">A life spoken in love</p>
+        <div class="eulogy-prose">
+          {% for paragraph in eulogy_paragraphs %}
+          <p class="eulogy-paragraph" data-eulogy-paragraph>{{ paragraph|linebreaksbr }}</p>
+          {% empty %}
+          <p class="eulogy-paragraph" data-eulogy-paragraph>No eulogy text has been added yet.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </article>
+
+    {% if eulogy_closing_prayer %}
+    <section class="eulogy-closing" data-eulogy-reveal aria-labelledby="eulogy-closing-heading">
+      <div class="eulogy-closing__glow" aria-hidden="true"></div>
+      <p class="card__label" id="eulogy-closing-heading">Closing prayer</p>
+      <blockquote class="eulogy-closing__prayer card__body card__body--prayer">{{ eulogy_closing_prayer }}</blockquote>
+    </section>
+    {% endif %}
+
+    <nav class="eulogy-actions btn-row" aria-label="Continue exploring">
+      <a class="btn btn--primary" href="{% url 'memorial:tributes' %}">Read tributes</a>
+      <a class="btn btn--ghost" href="{% url 'memorial:home' %}">Back to home</a>
+    </nav>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/eulogy.js' %}?v=1" defer></script>
+{% endblock %}

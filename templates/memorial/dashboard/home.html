@@ -1,0 +1,42 @@
+{% extends "memorial/dashboard/base.html" %}
+
+{% block admin_title %}Dashboard{% endblock %}
+
+{% block admin_content %}
+<p class="admin-intro">
+  Pick a section below or use the sidebar to edit memorial content. Changes appear on the public site after you save.
+</p>
+
+<div class="card-grid card-grid--2">
+  <a class="card card--link" href="{% url 'memorial:dashboard_home_update' %}">
+    <p class="card__label">Home</p>
+    <h3 class="card__title">Home page update</h3>
+    <p class="card__body">Fredrick’s portrait, welcome text, featured quote, and funeral programme on the public home page.</p>
+  </a>
+  <a class="card card--link" href="{% url 'memorial:dashboard_eulogy' %}">
+    <p class="card__label">Eulogy</p>
+    <h3 class="card__title">Eulogy update</h3>
+    <p class="card__body">Hero text, full eulogy body, and closing prayer.</p>
+  </a>
+  <a class="card card--link" href="{% url 'memorial:dashboard_life_story' %}">
+    <p class="card__label">Life story</p>
+    <h3 class="card__title">Life story update</h3>
+    <p class="card__body">Timeline chapters shown on the life story and home preview.</p>
+  </a>
+  <a class="card card--link" href="{% url 'memorial:dashboard_tributes' %}">
+    <p class="card__label">Tributes</p>
+    <h3 class="card__title">Tributes update</h3>
+    <p class="card__body">Review, edit, and approve messages from family and friends.</p>
+  </a>
+  <a class="card card--link" href="{% url 'memorial:dashboard_gallery' %}">
+    <p class="card__label">Gallery</p>
+    <h3 class="card__title">Gallery update</h3>
+    <p class="card__body">Upload photos and captions for the public gallery.</p>
+  </a>
+  <a class="card card--link" href="{% url 'memorial:dashboard_location' %}">
+    <p class="card__label">Locations</p>
+    <h3 class="card__title">Location update</h3>
+    <p class="card__body">Church and family home details for the Visit page maps.</p>
+  </a>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-content">
+<header class="page-hero">
+  <h2 class="page-hero__title">Memorial service</h2>
+  <p class="page-hero__lead">Details for honoring {{ memorial.full_name }}. Update times and venues with the family’s final arrangements.</p>
+  <div class="btn-row btn-row--tight">
+    <a class="btn btn--primary" href="{% url 'memorial:visit' %}">Get directions (church or home)</a>
+  </div>
+</header>
+
+<dl class="service-details">
+  <div class="card">
+    <dt>Date</dt>
+    <dd>To be announced by the family</dd>
+  </div>
+  <div class="card">
+    <dt>Venue</dt>
+    <dd>Family home / parish — Murang'a County</dd>
+  </div>
+  <div class="card">
+    <dt>Viewing</dt>
+    <dd>As communicated to relatives and close friends</dd>
+  </div>
+  <div class="card">
+    <dt>Family contact</dt>
+    <dd>Please reach out through the family WhatsApp group or church notice</dd>
+  </div>
+</dl>
+
+<article class="prose prose-spaced--tight page-content">
+  <p>
+    Flowers and condolences are welcome. In lieu of flowers, the family suggests contributions to
+    a scholarship or church fund in Mzee Fredrick's name — details to follow.
+  </p>
+  <p>
+    Dress respectfully. Children are welcome. The service will include hymns, eulogy, and time for
+    shared memories.
+  </p>
+</article>
+</div>
+{% endblock %}

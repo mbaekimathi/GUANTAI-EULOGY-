@@ -1,0 +1,138 @@
+{% extends "memorial/dashboard/base.html" %}
+
+{% block admin_title %}Tributes{% endblock %}
+
+{% block admin_content %}
+<p class="admin-intro">
+  Update several tributes at once, then save. Add rows with <strong>Add tribute</strong>; leave blank rows empty.
+</p>
+
+{% if formset.non_form_errors %}
+<div class="flash-messages" role="alert">
+  {% for err in formset.non_form_errors %}
+  <p class="flash flash--error">{{ err }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<form method="post" class="admin-form" id="tribute-admin-form">
+  {% csrf_token %}
+  {{ formset.management_form }}
+
+  <div class="admin-stack" id="tribute-formset-list">
+    {% for form in formset %}
+    <section class="admin-card admin-card--form" data-tribute-form>
+      <div class="admin-card__head">
+        <h3 class="admin-card__title">
+          {% if form.instance.pk %}
+          Tribute {{ forloop.counter }}
+          {% else %}
+          New tribute
+          {% endif %}
+        </h3>
+        {% if form.instance.pk and form.instance.created_at %}
+        <p class="admin-card__meta">{{ form.instance.created_at|date:"M j, Y" }}</p>
+        {% endif %}
+      </div>
+
+      {% if form.non_field_errors %}
+      <p class="form-field__error">{{ form.non_field_errors|join:", " }}</p>
+      {% endif %}
+
+      {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+
+      <div class="admin-form-grid">
+        <div class="form-field">
+          {{ form.author_name.label_tag }}
+          {{ form.author_name }}
+          {% if form.author_name.errors %}
+          <p class="form-field__error">{{ form.author_name.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+        <div class="form-field">
+          {{ form.relationship.label_tag }}
+          {{ form.relationship }}
+          {% if form.relationship.errors %}
+          <p class="form-field__error">{{ form.relationship.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="form-field">
+        {{ form.message.label_tag }}
+        {{ form.message }}
+        {% if form.message.errors %}
+        <p class="form-field__error">{{ form.message.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+      <div class="admin-card__footer">
+        <label class="admin-check">{{ form.is_approved }} {{ form.is_approved.label }}</label>
+        {% if form.instance.pk and form.DELETE %}
+        <label class="admin-check admin-check--muted">{{ form.DELETE }} Remove</label>
+        {% endif %}
+      </div>
+    </section>
+    {% empty %}
+    <div class="admin-empty">
+      <p>No tributes yet. Add one below or wait for guest submissions.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="admin-toolbar">
+    <button type="button" class="btn btn--ghost" id="add-tribute-row">Add tribute</button>
+    <div class="admin-toolbar__primary">
+      <a class="btn btn--ghost" href="{% url 'memorial:tributes' %}" target="_blank" rel="noopener">Preview</a>
+      <button type="submit" class="btn btn--primary">Save all</button>
+    </div>
+  </div>
+</form>
+
+<template id="tribute-empty-form-template">
+  <section class="admin-card admin-card--form" data-tribute-form>
+    <div class="admin-card__head">
+      <h3 class="admin-card__title">New tribute</h3>
+    </div>
+    {% with form=formset.empty_form %}
+    {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+    <div class="admin-form-grid">
+      <div class="form-field">
+        {{ form.author_name.label_tag }}
+        {{ form.author_name }}
+      </div>
+      <div class="form-field">
+        {{ form.relationship.label_tag }}
+        {{ form.relationship }}
+      </div>
+    </div>
+    <div class="form-field">
+      {{ form.message.label_tag }}
+      {{ form.message }}
+    </div>
+    <div class="admin-card__footer">
+      <label class="admin-check">{{ form.is_approved }} {{ form.is_approved.label }}</label>
+    </div>
+    {% endwith %}
+  </section>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+(function () {
+  var prefix = "tributes";
+  var totalInput = document.getElementById("id_" + prefix + "-TOTAL_FORMS");
+  var list = document.getElementById("tribute-formset-list");
+  var addBtn = document.getElementById("add-tribute-row");
+  var template = document.getElementById("tribute-empty-form-template");
+  if (!totalInput || !list || !addBtn || !template) return;
+
+  addBtn.addEventListener("click", function () {
+    var index = parseInt(totalInput.value, 10);
+    var html = template.innerHTML.replace(/__prefix__/g, String(index));
+    list.insertAdjacentHTML("beforeend", html);
+    totalInput.value = String(index + 1);
+  });
+})();
+</script>
+{% endblock %}
