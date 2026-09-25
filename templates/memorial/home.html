@@ -67,7 +67,12 @@
         <div class="btn-row">
           <a class="btn btn--primary" href="{% url 'memorial:life_story' %}">Life story</a>
           <a class="btn btn--ghost" href="{% url 'memorial:tributes' %}">View tributes</a>
-          <a class="btn btn--ghost" href="{% url 'memorial:visit' %}">Visit</a>
+          <a
+            class="btn btn--ghost"
+            href="{% url 'memorial:visit_go' 'church' %}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >Get directions</a>
         </div>
         <a class="home-hero__scroll" href="#home-programme">
           View funeral programme
@@ -258,7 +263,12 @@
         {% endif %}
 
         <div class="programme__actions btn-row btn-row--tight">
-          <a class="btn btn--primary" href="{% url 'memorial:visit' %}">Get directions</a>
+          <a
+            class="btn btn--primary"
+            href="{% url 'memorial:visit_go' 'church' %}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >Get directions</a>
           <a class="btn btn--ghost" href="{% url 'memorial:service' %}">Service details</a>
         </div>
       </div>
