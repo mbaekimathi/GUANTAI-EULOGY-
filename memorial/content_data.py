@@ -36,10 +36,10 @@ DEFAULT_HOME_PAGE = {
     "portrait_caption": "He walked gently, but left deep footprints.",
     "programme_title": "Funeral programme",
     "programme_lead": (
-        "Burial and homegoing service — Thursday, 25 September 2026 at "
+        "Burial and homegoing service — Friday, 25 September 2026 at "
         "PCEA Mbogori Church, Chogoria (Mbogori Marigwe)."
     ),
-    "programme_timeline": """Thursday, 25 September 2026 : Burial day
+    "programme_timeline": """Friday, 25 September 2026 : Burial day
 7:00 AM : Departure from home – Mbogori
 8:00 AM : Arrival at mortuary — viewing of the body
 9:00 AM : Departure from Chogoria
